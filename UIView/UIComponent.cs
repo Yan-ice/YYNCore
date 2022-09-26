@@ -54,7 +54,8 @@ public abstract class UIComponent : IComparable
     {
         m_parent = parent;
         m_gameObjectOuter.transform.SetParent(m_parent);
-        m_gameObjectOuter.transform.localPosition = location;
+        RectTransform r = m_gameObjectOuter.GetComponent<RectTransform>();
+        r.anchoredPosition = location;
     }
 
     /// <summary>

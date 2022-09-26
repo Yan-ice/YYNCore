@@ -24,8 +24,15 @@ public class LoadSceneManager : MonoSingleton<LoadSceneManager>
     /// <param name="scenesName">³¡¾°Ãû³Æ</param>
     public void LoadScene(string scenesName)
     {
-
         SceneManager.LoadScene(scenesName);
+    }
+    public void LoadSceneAddit(string sceneName)
+    {
+        SceneManager.LoadScene(sceneName, LoadSceneMode.Additive);
+    }
+    public void UnloadScene(string sceneName)
+    {
+        SceneManager.UnloadSceneAsync(sceneName);
     }
 
     /// <summary>

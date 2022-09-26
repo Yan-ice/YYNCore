@@ -129,6 +129,26 @@ public class FileMgr
         return File.Open(path,FileMode.OpenOrCreate);
     }
 
+    public static void Delete(string path)
+    {
+        path = convertToAbsolute(path);
+        if (Directory.Exists(path))
+        {
+            foreach(string p in Directory.GetDirectories(path))
+            {
+                Delete(p);
+            } 
+            foreach(string p in Directory.GetFiles(path))
+            {
+                Delete(p);
+            }
+            Directory.Delete(path);
+        }
+        if (File.Exists(path))
+        {
+            File.Delete(path);
+        }
+    }
   
     public static bool Exists(string path)
     {
@@ -137,7 +157,7 @@ public class FileMgr
     }
     public static void saveJsonObjToFile<T>(string path, T obj)
     {
-        string data = JsonConvert.SerializeObject(obj);
+        string data = JsonConvert.SerializeObject(obj, Formatting.Indented);
         byte[] binary = Encoding.UTF8.GetBytes(data);
         saveBinaryToFile(path, binary);
     }
@@ -167,5 +187,6 @@ public class FileMgr
         f.Close();
         return File.ReadAllBytes(path);
     }
+
 
 }

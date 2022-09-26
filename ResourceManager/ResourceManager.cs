@@ -13,7 +13,7 @@ using UnityEngine;
 public class JsonSet<T>
 {
     public string m_tag;
-    public List<T> m_list;
+    public List<T> m_list = new List<T>();
 }
 
 public class ResourceManager : Singleton<ResourceManager>

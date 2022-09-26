@@ -27,29 +27,37 @@ public class NumUtil
     }
     public static float RandFloat(float max)
     {
+        if (current == null)
+        {
+            current = new Random(DateTime.Now.Millisecond);
+        }
         return (float)current.NextDouble() * max;
     }
     public static float RandFloat(float min, float max)
     {
-        return min + (float)current.NextDouble() * (max-min);
+        return min + RandFloat(max-min);
     }
 
-    public static double Random()
-    {
-        double d = current.NextDouble();
-        return d - (int)d;
-    }
-    
     /// <summary>
     /// 开启一个新的随机数状态
     /// </summary>
     /// <param name="seed"></param>
     public static void NewState(int seed)
     {
-        rand_states.Push(current);
+        if (current != null)
+        {
+            rand_states.Push(current);
+        }
         current = new Random(seed);
     }
 
+    /// <summary>
+    /// 开启一个随机的随机数状态
+    /// </summary>
+    public static void NewState()
+    {
+        NewState(DateTime.Now.Millisecond+DateTime.Now.DayOfYear*1000);
+    }
     /// <summary>
     /// （放弃当前随机数状态并)回到上一个随机数状态。
     /// </summary>

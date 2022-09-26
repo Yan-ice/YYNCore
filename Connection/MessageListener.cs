@@ -16,3 +16,16 @@ public interface MessageListener
     void onMessageReceived(Socket from, Message message);
 
 }
+
+class ASimpleListener : MessageListener
+{
+    public string Identity()
+    {
+        return "Controller";
+    }
+
+    public void onMessageReceived(Socket from, Message message)
+    {
+        ClientSocket.Instance.registerMessageListener(this);
+    }
+}

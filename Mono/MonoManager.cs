@@ -25,6 +25,7 @@ public class MonoUpdateManager : Singleton<MonoUpdateManager>
         controller.AddUpdateListener(fun);
     }
 
+
     /// <summary>
     /// 移除帧更新事件
     /// </summary>

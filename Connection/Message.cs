@@ -109,6 +109,15 @@ public class Message
     }
 
 
+    public void addObj(string k, object v)
+    {
+        add(k, Encryptor.EncryptObject(v));
+    }
+
+    public T getObj<T>(string k)
+    {
+        return Encryptor.DecryptObject<T>(get(k));
+    }
 
     /// <summary>
     /// 通过序列化的字符串来获得一个Message对象，

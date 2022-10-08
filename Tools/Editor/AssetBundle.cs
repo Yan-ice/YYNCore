@@ -5,6 +5,68 @@ using UnityEngine;
 using UnityEditor;
 using System.IO;
 
+public class AssetBundleCompile
+{
+    static string source_root = "Assets/AssetBundle/";
+    static string target_root = "Assets/AssetBundle/_compile/";
+
+    public static string compiledRoot()
+    {
+        return target_root;
+    }
+
+    public static void compileAB(string packname)
+    {
+        copyDir(packname);
+        AssetImporter assetImporter = AssetImporter.GetAtPath(target_root+packname);
+        assetImporter.assetBundleName = packname;
+    }
+
+    static void copyDir(string dir)
+    {
+        string r_path = source_root + dir;
+        string t_path = target_root + dir;
+
+        if (!Directory.Exists(t_path))
+        {
+            Directory.CreateDirectory(t_path);
+        }
+        foreach (string d in Directory.GetDirectories(r_path))
+        {
+            string[] ss = d.Split(new char[] { '/', '\\' });
+            string name = ss[ss.Length - 1];
+            copyDir(dir+"/"+name);
+        }
+
+        foreach (string d in Directory.GetFiles(r_path))
+        {
+            string[] ss = d.Split(new char[] { '/', '\\' });
+            string name = ss[ss.Length - 1];
+            copyFile(dir+"/"+name);
+        }
+    }
+
+    static void copyFile(string file)
+    {
+        string r_path = source_root + file;
+        string t_path = target_root + file;
+        if (t_path.EndsWith(".meta"))
+        {
+            return;
+        }
+        if (t_path.EndsWith(".cs"))
+        {
+            t_path = t_path.Replace(".cs", ".txt");
+        }
+
+        if (File.Exists(t_path))
+        {
+            File.Delete(t_path);
+        }
+        File.Copy(r_path, t_path);
+    }
+
+}
 public class CreateAssetBundles
 {
     [MenuItem("Assets/Build AssetBundlePack")]
@@ -15,42 +77,10 @@ public class CreateAssetBundles
         {
             Directory.CreateDirectory(assetBundleDirectory);
         }
-        compFile("Assets/AssetBundle");
+        AssetBundleCompile.compileAB("defaultpack");
+
         BuildPipeline.BuildAssetBundles(assetBundleDirectory,
                                         BuildAssetBundleOptions.ChunkBasedCompression,
                                         BuildTarget.StandaloneWindows);
-        decompFile("Assets/AssetBundle");
-    }
-
-    static void compFile(string dir)
-    {
-        foreach(string d in Directory.GetDirectories(dir))
-        {
-            compFile(d);
-        }
-        foreach(string d in Directory.GetFiles(dir))
-        {
-            Debug.Log("file found: " + d);
-            if (d.EndsWith(".cs"))
-            {
-                File.Move(d, d.Replace(".cs", ".txt"));
-            }
-        }
-    }
-
-    static void decompFile(string dir)    
-    {
-        foreach(string d in Directory.GetDirectories(dir))
-        {
-            decompFile(d);
-        }
-        foreach(string d in Directory.GetFiles(dir))
-        {
-            if (d.EndsWith(".txt"))
-            {
-                File.Move(d, d.Replace(".txt", ".cs"));
-            }
-        }
- 
     }
 }

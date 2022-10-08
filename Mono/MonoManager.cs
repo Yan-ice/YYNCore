@@ -139,6 +139,11 @@ public class MonoUpdateManager : Singleton<MonoUpdateManager>
         }
         controller.speed = time;
     }
+
+    public int getSpeed()
+    {
+        return controller.speed;
+    }
 }
 
 

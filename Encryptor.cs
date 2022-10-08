@@ -28,8 +28,18 @@ class Encryptor
             //Log.Message("发送转码:" + Encoding.UTF8.GetString(utf8) + "$");
             socket.Send(Encoding.UTF8.GetBytes(Encoding.UTF8.GetString(utf8) + "$"));//发送TCP信息
     }
-       
-    
+
+    public static string EncryptObject<T>(T obj)
+    {
+        string s = JsonConvert.SerializeObject(obj);
+        return DESEncrypt(s);
+    }
+
+    public static T DecryptObject<T>(string obj)
+    {
+        string s = DESDecrypt(obj);
+        return JsonConvert.DeserializeObject<T>(s);
+    }
 
     #region DESCryptoService对称加密
     /// <summary>   

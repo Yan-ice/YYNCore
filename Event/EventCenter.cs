@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -50,9 +51,9 @@ public class EventCenter : Singleton<EventCenter>
         if (!actions.ContainsKey(e.GetType())){
             return;
         }
-        foreach (object action in actions[e.GetType()])
+        for (int i = actions[e.GetType()].Count - 1; i >= 0; i--)
         {
-            ((EventListener<T>) action).callback(e);
+            ((EventListener<T>)actions[e.GetType()][i]).callback(e);
         }
     }
 }

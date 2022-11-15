@@ -54,36 +54,6 @@ public class MonoUpdateManager : Singleton<MonoUpdateManager>
     }
 
 
-    public Coroutine StartCoroutine(string methodName)
-    {
-        return controller.StartCoroutine(methodName);
-    }
-
-    public Coroutine StartCoroutine(IEnumerator routine)
-    {
-        return controller.StartCoroutine(routine);
-    }
-
-    public Coroutine StartCoroutine(string methodName, [DefaultValue("null")] object value)
-    {
-        return controller.StartCoroutine(methodName, value);
-    }
-
-    public void StopCoroutine(string methodName)
-    {
-        controller.StopCoroutine(methodName);
-    }
-
-    public void StopCoroutine(IEnumerator routine)
-    {
-        controller.StopCoroutine(routine);
-    }
-
-    public void StopCoroutine(Coroutine routine)
-    {
-        controller.StopCoroutine(routine);
-    }
-
     public GameObject Instantiate(GameObject gameObject,Transform transform)
     {
         if (gameObject == null|| transform == null)

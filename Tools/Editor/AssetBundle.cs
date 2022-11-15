@@ -17,6 +17,12 @@ public class AssetBundleCompile
 
     public static void compileAB(string packname)
     {
+        //string t_path = target_root + packname;
+        //if (Directory.Exists(t_path))
+        //{
+        //    Directory.Delete(t_path, true);
+        //}
+
         copyDir(packname);
         AssetImporter assetImporter = AssetImporter.GetAtPath(target_root+packname);
         assetImporter.assetBundleName = packname;

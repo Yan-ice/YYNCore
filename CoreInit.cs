@@ -15,6 +15,7 @@ public abstract class CoreInit : MonoBehaviour
             m_init = true;
             Log.Message("核心初始化");
             UIManager.Init();
+            SoundSystem.Init();
             //用户需要初始化的调用
             OnInit();
         }

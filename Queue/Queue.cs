@@ -1,134 +1,168 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.Events;
 
-public class GameQueue : Singleton<GameQueue>
+public class ResetableEnumerator<T> : IEnumerator<T>
 {
+    public IEnumerator<T> Enumerator { get; set; }
+    public Func<IEnumerator<T>> ResetFunc { get; set; }
 
-    private struct Task
+    public T Current { get { return Enumerator.Current; } }
+    public void Dispose() { Enumerator.Dispose(); }
+    object IEnumerator.Current { get { return Current; } }
+    public bool MoveNext() { return Enumerator.MoveNext(); }
+    public void Reset() { Enumerator = ResetFunc(); }
+}
+
+public enum AnimType
+{
+    After, OnTime
+}
+
+public class st
+{
+    public IEnumerator<int> e;
+    public long startDelayTime, delayTime;
+    public List<st> startOnTime;
+    public List<st> startFinish;
+    public st (IEnumerator<int> e, int delayTime)
     {
-        public int run;
-        public int param;
-        public int param2;
-        public int param3;
-        public byte timecost;
+        this.e = e;
+        this.delayTime = delayTime;
+        startOnTime = new List<st>();
+        startFinish = new List<st>();
+    }
+};
+public class Queue : Destroyable
+{
+    public int currentTime = 0;
+    public List<st> playingQueue = new List<st>();
+    public List<st> addList = new List<st>();
+    public st previous = null;
+    public Queue()
+    {
+        MonoUpdateManager.Instance.AddUpdateListener(Update);
+    }
+    public void Destroy()
+    {
+        MonoUpdateManager.Instance.RemoveUpdateListener(Update);
+    }
 
-        public Task(string name, int para, int timecost, int para2 = 0, int para3 = 0)
+    private IEnumerable<int> empty()
+    {
+        yield return 0;
+    }
+
+    public void BeginPlaying(st p)
+    {
+        p.startDelayTime = currentTime + 1;
+        addList.Add(p);
+    }
+
+    //一个会被每帧调用的函数。用它来负责让动画move next吧
+    public void Update()
+    {
+        currentTime += 1;
+        List<st> deleteList = new List<st>();
+        foreach(st now in playingQueue)
         {
-            if (name != null)
+            if(now.delayTime + now.startDelayTime <= currentTime)
             {
-                run = reflect1[name];
+                if (now.delayTime + now.startDelayTime == currentTime)
+                {
+                    foreach(st nex in now.startOnTime)
+                    {
+                        BeginPlaying(nex);
+                    }
+                }
+                bool hasNext = now.e.MoveNext();
+                if(hasNext == false)
+                {
+                    foreach (st nex in now.startFinish)
+                    {
+                        BeginPlaying(nex);
+                    }
+                    deleteList.Add(now);
+                }
             }
-            else
-            {
-                run = -1;
-            }
-            
-            param = para;
-            param2 = para2;
-            param3 = para3;
-            this.timecost = (byte)timecost;
         }
-    }
-
-    public GameQueue(){
-        MonoUpdateManager.Instance.AddUpdateListener(onUpd);
-    }
-    Queue<Task> m_runnable = new Queue<Task>();
-
-    static Dictionary<string, int> reflect1 = new Dictionary<string, int>();
-    static Dictionary<int, UAction> reflect2 = new Dictionary<int, UAction>();
-    int counter = 0;
-
-    public void RegisterAction(string name, Action act)
-    {
-        put(name, new UAction(act));
-    }
-    public void RegisterAction(string name,Action<int> act)
-    {
-        put(name, new UAction(act));
-    }
-    public void RegisterAction(string name, Action<int,int> act)
-    {
-        put(name, new UAction(act));
-    }
-    public void RegisterAction(string name, Action<int, int, int> act)
-    {
-        put(name, new UAction(act));
-    }
-
-    private void put(string name,UAction action)
-    {
-        if (reflect1.ContainsKey(name))
+        foreach(st delete in deleteList)
         {
-            reflect2[reflect1[name]] = action;
+            playingQueue.Remove(delete);
+        }
+        foreach(st add in addList)
+        {
+            playingQueue.Add(add);
+        }
+        addList.Clear();
+    }
+
+    //该函数为对外的接口：
+    //使用者在使用该系统时，希望能够通过该函数让一个个动画入栈，
+    //入栈的动画应自动播放。
+    //对于传入的动画，应每帧move next一次（同Unity的协程机制），
+    //在一个动画播完后，从队列中移除，开始move next队列中的另一动画。
+    //
+    //参数：
+    //e: 动画
+    //type: 动画类型，与上一动画同时，或上一动画后。
+    //delay: 延迟多久后才开始动画，一定大于等于0。
+    public void EnqueueAction(IEnumerable<int> e, AnimType type = AnimType.After, int delay = 0)
+    {
+        
+        st insert = new st(e.GetEnumerator(), delay);
+        if (previous == null || playingQueue.Count==0)
+        {
+            insert.startDelayTime = currentTime + 1;
+            playingQueue.Add(insert);
         }
         else
         {
-            reflect1.Add(name, counter);
-            reflect2.Add(counter, action);
-            counter++;
-        }
-    }
-
-
-    public void addAction(string id, int timecost = 10, int param1 = 0, int param2 = 0, int param3 = 0)
-    {
-        m_runnable.Enqueue(new Task(id,param1,timecost,param2,param3));
-    }
-
-    public void clearQueue()
-    {
-        m_runnable.Clear();
-    }
-
-    public bool isClear()
-    {
-        return m_runnable.Count==0;
-    }
-    public int getRest()
-    {
-        return m_runnable.Count;
-    }
-
-    private int cooldown = 0;
-    private void onUpd()
-    {
-        
-        if (cooldown > 0)
-        {
-            cooldown--;
-            return;
-        }
-        if(m_runnable.Count == 0)
-        {
-            return;
-        }
-        startNext();
-
-    }
-    
-    private void startNext()
-    {
-        Task next = m_runnable.Dequeue();
-        cooldown = next.timecost;
-        try
-        {
-            if (next.run != -1)
+            if(type == AnimType.OnTime)
             {
-                reflect2[next.run].Invoke(next.param, next.param2, next.param3);
+                previous.startOnTime.Add(insert);
             }
-            
+            else
+            {
+                previous.startFinish.Add(insert);
+            }
         }
-        catch (Exception e)
-        {
-            Log.Error("Error in Queue: " + e.Message + " " + e.StackTrace);
-        }
-        if (m_runnable.Count > 0 && cooldown == 0)
-        {
-            startNext();
-        }
+        Debug.Log(playingQueue.Count);
+        previous = insert;
     }
+
+    //该函数为对外的接口：
+    //使用者在使用该系统时，希望能够通过该函数让一个个动画入栈，
+    //入栈的动画应自动播放。
+    //对于传入的动画，应每帧move next一次（同Unity的协程机制），
+    //在一个动画播完后，从队列中移除，开始move next队列中的另一动画。
+    //
+    //参数：
+    //e: 动画
+    //type: 动画类型，与上一动画同时，或上一动画后。
+    //delay: 延迟多久后才开始动画，一定大于等于0。
+    public void EnqueueEmpty(AnimType type = AnimType.After, int delay = 0)
+    {
+        st insert = new st(empty().GetEnumerator(), delay);
+        if (previous == null)
+        {
+            insert.startDelayTime = currentTime + 1;
+            playingQueue.Add(insert);
+        }
+        else
+        {
+            if (type == AnimType.OnTime)
+            {
+                previous.startOnTime.Add(insert);
+            }
+            else
+            {
+                previous.startFinish.Add(insert);
+            }
+        }
+        previous = insert;
+    }
+
 }

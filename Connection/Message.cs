@@ -1,9 +1,12 @@
 ﻿using System.Collections.Generic;
-
+using System.Reflection;
+using System;
 public class Message
 {
+    static string gap_label = ",";
     struct Entry
     {
+        
         public string K;
         public string V;
 
@@ -109,14 +112,23 @@ public class Message
     }
 
 
-    public void addObj(string k, object v)
+    public void addObj<T>(string k, T v)
     {
         add(k, Encryptor.EncryptObject(v));
+    }
+     public void addObject(string k,Type t, object v)
+    {
+        add(k, Encryptor.EncryptObject(t,v));
     }
 
     public T getObj<T>(string k)
     {
         return Encryptor.DecryptObject<T>(get(k));
+    }
+
+    public object getObject(Type t, string k)
+    {
+        return Encryptor.DecryptObject(t, k);
     }
 
     /// <summary>
@@ -134,7 +146,7 @@ public class Message
         {
             string[] fir = message.Split("|".ToCharArray());
             identity = fir[0];
-            string[] sec = fir[1].Split(",".ToCharArray());
+            string[] sec = fir[1].Split(gap_label.ToCharArray());
 
             foreach (string en in sec)
             {
@@ -193,11 +205,11 @@ public class Message
             }
             else
             {
-                total = total + "," + en.ToString();
+                total = total + gap_label + en.ToString();
             }
         }
         
-        return total + "$";
+        return total + "$"; 
     }
 
     /// <summary>
@@ -247,5 +259,16 @@ public class Message
             }
         }
         return true;
+    }
+
+    public List<string> getKeys()
+    {
+        var Keys = new List<string> { };
+        for (int i = 0; i < m_entryList.Count; i++)
+        {
+            string key = m_entryList[i].K;
+            Keys.Add(key);
+        }
+        return Keys;
     }
 }

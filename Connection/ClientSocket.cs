@@ -4,15 +4,18 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using UnityEngine;
-using UnityEngine.SceneManagement;
+using UnityEngine.SceneManagement;//这个在server里面不要出现，服务器没有，收发肯定是sokect，
+//打包和解包都在客户端，服务器那边是只做转发的事情。
+//这个要求的无感知转发，是说我调用这个方法所有的服务器都要进行这个方法的调用
 using System.Text;
 using UnityEngine.Events;
 
 public class ClientSocket : Singleton<ClientSocket>
 {
-    public string IP;
+    public string IP;  // 要连接的IP
     public int port;
     Socket m_clientSocket;
+    public bool whether_connectting = false;
 
     Thread thr;
     public UnityEvent connectSuccess = new UnityEvent();
@@ -24,6 +27,7 @@ public class ClientSocket : Singleton<ClientSocket>
         thr = new Thread(connectServer);
         thr.IsBackground = true;
         thr.Start();
+
     }
 
     public void ConnectTo(string IP,int port)
@@ -33,6 +37,7 @@ public class ClientSocket : Singleton<ClientSocket>
         //第一个参数为寻找地址的方式,此时选定为IPV4的地址; 第二个参数为数据传输的方式，此时选择的是Stream传输(能够准确无误的将数据传输到)；第三个参数为执行的协议，此时选择的是TCP协议；
         if (connecter != null)
         {
+            Debug.Log("40 hang of clientsocket");
             return;
         }
         try
@@ -46,6 +51,7 @@ public class ClientSocket : Singleton<ClientSocket>
             connecter = null;
             Loom.QueueOnMainThread(connectFailed.Invoke);
         }
+        this.whether_connectting = true;
     }
 
     Thread connecter = null;
@@ -68,6 +74,7 @@ public class ClientSocket : Singleton<ClientSocket>
         }
         catch (Exception e)
         {
+            m_clientSocket.Shutdown(SocketShutdown.Both);
             m_clientSocket.Close();
             m_clientSocket = null;
             connecter = null;
@@ -86,7 +93,7 @@ public class ClientSocket : Singleton<ClientSocket>
         //SceneManager.LoadScene("Game", LoadSceneMode.Single);
 
         string buffer = "";
-        while (true)
+        while (true) 
         {
             
             if (isClosed || m_clientSocket==null)
@@ -115,6 +122,7 @@ public class ClientSocket : Singleton<ClientSocket>
             {
                 Log.Message("unknown host.");
                 isClosed = true;
+                m_clientSocket.Shutdown(SocketShutdown.Both);
                 m_clientSocket.Close();
             }
        
@@ -126,7 +134,8 @@ public class ClientSocket : Singleton<ClientSocket>
             string[] msgs = buffer.Split('$');
             for(int a = 0; a < msgs.Length - 1; a++)
             {
-                string mesStr = Encryptor.DESDecrypt(msgs[a]);//解密指令
+                //string mesStr = Encryptor.DESDecrypt(msgs[a]);//解密指令
+                string mesStr = msgs[a];
                 try
                 {
                     if (mesStr.Contains("|"))
@@ -216,7 +225,13 @@ public class ClientSocket : Singleton<ClientSocket>
             return;
         }
         //Debug.Log("[send] " + mes.ToString());
-        Encryptor.SendEncryptMessage(m_clientSocket,mes.ToString());
+        //Encryptor.SendEncryptMessage(m_clientSocket,mes.ToString());
+        string command = mes.ToString();
+        //下面这里应该可以简化
+        //byte[] utf8 = Encoding.UTF8.GetBytes(command);
+        //m_clientSocket.Send(Encoding.UTF8.GetBytes(Encoding.UTF8.GetString(utf8) ));//发送TCP信息
+        m_clientSocket.Send(Encoding.UTF8.GetBytes(command));
+
     }
 
     bool isClosed = false;
@@ -237,6 +252,7 @@ public class ClientSocket : Singleton<ClientSocket>
                 m.add("type", "close");
                 send(m);
                 isClosed = true;
+                m_clientSocket.Shutdown(SocketShutdown.Both);
                 m_clientSocket.Close();
             }
             catch (Exception)
@@ -254,6 +270,7 @@ public class ClientSocket : Singleton<ClientSocket>
             try
             {
                 isClosed = true;
+                m_clientSocket.Shutdown(SocketShutdown.Both);
                 m_clientSocket.Close();
             }
             catch (Exception)

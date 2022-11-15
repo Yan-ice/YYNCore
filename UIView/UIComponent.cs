@@ -1,13 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
 public abstract class UIComponent : IComparable
 {
+    protected List<UIComponent> m_childComponents = new List<UIComponent>();
 
     protected GameObject m_gameObjectOuter;
     protected Transform m_parent;
-    public UIWindow m_root { get; set; }
+    public UIComponent m_root { get; set; }
     private string m_prefabName;
 
     public bool m_isDestroyed { get; private set; }
@@ -50,12 +52,14 @@ public abstract class UIComponent : IComparable
             m_gameObjectOuter.transform.SetParent(parent);
         }
     }
-    public void SetLocation(Transform parent, Vector2 location)
+    public bool SetLocation(Transform parent, Vector3 location)
     {
         m_parent = parent;
         m_gameObjectOuter.transform.SetParent(m_parent);
         RectTransform r = m_gameObjectOuter.GetComponent<RectTransform>();
+        if (r.anchoredPosition.Equals(location)) return false;
         r.anchoredPosition = location;
+        return true;
     }
 
     /// <summary>
@@ -248,5 +252,48 @@ public abstract class UIComponent : IComparable
     public int CompareTo(object obj)
     {
         return -1 * SortOrder().CompareTo(((UIComponent)obj).SortOrder());
+    }
+
+    public GameObject getGameObject()
+    {
+        return m_gameObjectOuter;
+    }
+
+    /// <summary>
+    /// 创建子控件，如果parent为空，则实例化在window同级目录。
+    /// </summary>
+    /// <typeparam name="T">控件类型</typeparam>
+    /// <returns></returns>
+    public T CreateUIComponent<T>(RectTransform parent) where T : UIComponent, new()
+    {
+        T component = new T();
+        component.m_root = this;
+        component.LoadLayer(0);//初始化
+        if (parent != null)
+        {
+            component.SetLocation(parent, Vector2.zero);//设置父组件和坐标
+        }
+        component.Show();//展示
+        m_childComponents.Add(component);//容器储存，方便集体销毁
+        return component;
+    }
+
+    /// <summary>
+    /// 销毁改UIWindow下的所有子控件
+    /// </summary>
+    protected void DestoryAllChildComponent()
+    {
+        foreach (UIComponent component in m_childComponents)
+        {
+            component.Destroy();
+        }
+        m_childComponents.Clear();
+    }
+
+    protected void DestoryChildComponent(UIComponent comp)
+    {
+        m_childComponents.Remove(comp);
+        comp.Destroy();
+
     }
 }

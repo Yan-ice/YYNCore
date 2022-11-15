@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -9,7 +10,7 @@ using System.Threading.Tasks;
 
 class Encryptor
 {
-    public static bool enableEncrypting = false;
+    public static bool enableEncrypting = true;
 
     static string m_key = "yatyat12";
     static string m_iv = "12yatyat";
@@ -35,10 +36,21 @@ class Encryptor
         return DESEncrypt(s);
     }
 
+    public static string EncryptObject(Type t, object obj)
+    {
+        string s = JsonConvert.SerializeObject(obj, t, (JsonSerializerSettings)null);
+        return DESEncrypt(s);
+    }
+
     public static T DecryptObject<T>(string obj)
     {
         string s = DESDecrypt(obj);
         return JsonConvert.DeserializeObject<T>(s);
+    }
+    public static object DecryptObject(Type t, string obj)
+    {
+        string s = DESDecrypt(obj);
+        return JsonConvert.DeserializeObject(s,t, (JsonSerializerSettings)null);
     }
 
     #region DESCryptoService对称加密

@@ -8,8 +8,6 @@ using UnityEngine;
 public class MeshManager : Singleton<MeshManager>
 {
 
-    public static string path = "MeshPrefab/";
-
     Dictionary<Type, Dictionary<object, MonoBehaviour>> hash = new Dictionary<Type, Dictionary<object, MonoBehaviour>>();
 
     /// <summary>
@@ -72,14 +70,20 @@ public class MeshManager : Singleton<MeshManager>
 
         if (link.ContainsKey(obj))
         {
-            GameObject.DestroyImmediate((U)link[obj]);
+            if (link[obj] == null)
+            {
+                Debug.Log("WARNING: removing null link");
+                return;
+            }
+            GameObject.DestroyImmediate(link[obj].gameObject);
             link.Remove(obj);
         }
     }
 
+    //从资源中加载预制件。
     private GameObject LoadMesh(string mesh)
     {
-        GameObject go = (GameObject)Resources.Load(string.Format("{0}{1}", path, mesh));
+        GameObject go = ResourceManager.Instance.LoadPrefab("meshManager", mesh);
         return GameObject.Instantiate(go);
     }
 }

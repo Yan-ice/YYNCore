@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 public abstract class UIWindow : UIComponent
 {
-    protected List<UIComponent> m_childComponents = new List<UIComponent>();
+    
     public UIWindow()
     {
         SetParent(UIManager.m_root.transform);
@@ -24,29 +24,10 @@ public abstract class UIWindow : UIComponent
     /// </summary>
     /// <typeparam name="T">控件类型</typeparam>
     /// <returns></returns>
-    protected T LoadIComponent<T>(GameObject obj) where T : UIComponent, new()
+    protected T LoadUIComponent<T>(GameObject obj) where T : UIComponent, new()
     {
         T component = new T();
         component.LoadByObject(obj);
-        m_childComponents.Add(component);//容器储存，方便集体销毁
-        return component;
-    }
-
-    /// <summary>
-    /// 创建子控件，如果parent为空，则实例化在window同级目录。
-    /// </summary>
-    /// <typeparam name="T">控件类型</typeparam>
-    /// <returns></returns>
-    public T CreateUIComponent<T>(RectTransform parent) where T : UIComponent, new()
-    {
-        T component = new T();
-        component.m_root = this;
-        component.LoadLayer(0);//初始化
-        if (parent != null)
-        {
-            component.SetLocation(parent, Vector2.zero);//设置父组件和坐标
-        }
-        component.Show();//展示
         m_childComponents.Add(component);//容器储存，方便集体销毁
         return component;
     }
@@ -87,17 +68,7 @@ public abstract class UIWindow : UIComponent
         m_childComponents.Add(component);//容器储存，方便集体销毁
         return component;
     }
-    /// <summary>
-    /// 销毁改UIWindow下的所有子控件
-    /// </summary>
-    protected void DestoryAllChildComponent()
-    {
-        foreach (UIComponent component in m_childComponents)
-        {
-            component.Destroy();
-        }
-        m_childComponents.Clear();
-    }
+
 
     /// <summary>
     /// 返回该窗口是否正在显示

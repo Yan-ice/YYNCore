@@ -13,13 +13,15 @@ public abstract class Event
 
 public interface EventListener<T> where T : Event 
 {
+    public int priority(T evt);
+
     public void callback(T evt);
+
 }
 
 
 public class EventCenter : Singleton<EventCenter>
 {
-
     private Dictionary<Type, List<object>> actions = new Dictionary<Type, List<object>>();
 
     public void regAction<T>(EventListener<T> action) where T : Event
@@ -48,12 +50,38 @@ public class EventCenter : Singleton<EventCenter>
 
     public void trigger<T>(T e) where T : Event
     {
+        //Debug.Log("Triggering event " + e.GetType());
         if (!actions.ContainsKey(e.GetType())){
             return;
         }
-        for (int i = actions[e.GetType()].Count - 1; i >= 0; i--)
+        foreach(object t in actions[typeof(T)])
         {
-            ((EventListener<T>)actions[e.GetType()][i]).callback(e);
+            if(!(t is EventListener<T>))
+            {
+                Debug.LogError("WARN: inconsist type!");
+            }
+        }
+            actions[typeof(T)].Sort(
+                (object a, object b) =>
+                {
+                    if (!(a is EventListener<T>) || !(b is EventListener<T>))
+                    {
+                        Debug.Log("WARN: inconsist type!");
+                    }
+                    if (a == null || b == null)
+                    {
+                        Debug.Log("WARN: null!");
+
+                    }
+                    int p1 = ((EventListener<T>)a).priority(e);
+                    int p2 = ((EventListener<T>)b).priority(e);
+                    return p1.CompareTo(p2);
+                }
+            );
+
+        for (int i = actions[typeof(T)].Count - 1; i >= 0; i--)
+        {
+            ((EventListener<T>)(actions[typeof(T)][i])).callback(e);
         }
     }
 }

@@ -50,7 +50,7 @@ public class ServerSocket : Singleton<ServerSocket>
         }
     }
 
-    List<MessageListener> listenerList = new List<MessageListener>();
+    List<MessageListener> listenerList = new List<MessageListener>();  //要转发去的
     public void registerMessageListener(MessageListener listener)
     {
         lock (listenerList)
@@ -134,7 +134,6 @@ public class ServerSocket : Singleton<ServerSocket>
         {
             try
             {
-
                 m_serverSocket.Listen(1);
                 Socket s = m_serverSocket.Accept();
                 Log.Message(System.DateTime.Now.ToLongTimeString()+" Identifying connection: " +s.RemoteEndPoint.ToString()+" (local "+s.LocalEndPoint.ToString()+")");

@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 
 #if UNITY_EDITOR
 
@@ -11,5 +13,8 @@ public class MenuTool
     public static void getTerminal()
     {
     }
+
+
 }
 #endif
+

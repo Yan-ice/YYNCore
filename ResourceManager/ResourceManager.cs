@@ -54,8 +54,41 @@ public class ResourceManager : Singleton<ResourceManager>
         JsonSet<T> myObject = JsonConvert.DeserializeObject<JsonSet<T>>(t);
         return myObject;
     }
+   
+    public Sprite LoadImage(string space, string name)
+    {
+        string path = "Image/" + space + "/" + name;
+        Sprite txt = Resources.Load<Sprite>(path);
+        if (txt == null)
+        {
+            Debug.LogAssertion("Could not find image assets " + path);
+            return null;
+        }
+        return txt;
+    }
 
-
+    public GameObject LoadPrefab(string space, string name)
+    {
+        string path = "Prefab/" + space + "/" + name;
+        GameObject txt = Resources.Load<GameObject>(path);
+        if (txt == null)
+        {
+            Debug.LogAssertion("Could not find prefab assets " + path);
+            return null;
+        }
+        return txt;
+    }
+    public AudioClip LoadAudio(string space, string name)
+    {
+        string path = "Audio/" + space + "/" + name;
+        AudioClip txt = Resources.Load<AudioClip>(path);
+        if (txt == null)
+        {
+            Debug.LogAssertion("Could not find audio assets " + path);
+            return null;
+        }
+        return txt;
+    }
     /// <summary>
     /// 打印一个json对象的字符串
     /// （这个函数不应该出现在这里 不过 暂时测试用 无所谓了）

@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 
 public class NumUtil
 {
-
     //以下是随机数生成部分。
     static Random current;
     static Stack<Random> rand_states = new Stack<Random>();

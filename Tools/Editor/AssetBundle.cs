@@ -10,25 +10,14 @@ public class AssetBundleCompile
     static string source_root = "Assets/AssetBundle/";
     static string target_root = "Assets/AssetBundle/_compile/";
 
-    public static string compiledRoot()
-    {
-        return target_root;
-    }
-
     public static void compileAB(string packname)
     {
-        //string t_path = target_root + packname;
-        //if (Directory.Exists(t_path))
-        //{
-        //    Directory.Delete(t_path, true);
-        //}
-
-        copyDir(packname);
+        copyDir(packname, packname);
         AssetImporter assetImporter = AssetImporter.GetAtPath(target_root+packname);
         assetImporter.assetBundleName = packname;
     }
 
-    static void copyDir(string dir)
+    static void copyDir(string dir, string packname)
     {
         string r_path = source_root + dir;
         string t_path = target_root + dir;
@@ -41,14 +30,23 @@ public class AssetBundleCompile
         {
             string[] ss = d.Split(new char[] { '/', '\\' });
             string name = ss[ss.Length - 1];
-            copyDir(dir+"/"+name);
+            copyDir(dir+"/"+name, packname);
         }
 
         foreach (string d in Directory.GetFiles(r_path))
         {
             string[] ss = d.Split(new char[] { '/', '\\' });
             string name = ss[ss.Length - 1];
-            copyFile(dir+"/"+name);
+            if (name.EndsWith(".cs"))
+            {
+                copyFile(dir + "/" + name);
+            }
+            else if(!name.EndsWith(".meta"))
+            {
+                AssetImporter assetImporter = AssetImporter.GetAtPath(r_path+"/"+name);
+                assetImporter.assetBundleName = packname;
+            }
+            
         }
     }
 
@@ -78,11 +76,13 @@ public class CreateAssetBundles
     [MenuItem("Assets/Build AssetBundlePack")]
     static void BuildAllAssetBundles()
     {
-        string assetBundleDirectory = "Assets/AssetBundlePack";
-        if (!Directory.Exists(assetBundleDirectory))
+        string assetBundleDirectory = "AssetBundlePack";
+        if (Directory.Exists(assetBundleDirectory))
         {
-            Directory.CreateDirectory(assetBundleDirectory);
+            Directory.Delete(assetBundleDirectory, true);
         }
+        Directory.CreateDirectory(assetBundleDirectory);
+
         AssetBundleCompile.compileAB("defaultpack");
 
         BuildPipeline.BuildAssetBundles(assetBundleDirectory,

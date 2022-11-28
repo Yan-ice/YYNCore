@@ -18,7 +18,7 @@ public abstract class UIComponent : IComparable
 
     public UIComponent()
     {
-        m_parent = UIManager.m_root.transform;
+        m_parent = UIManager.Instance.m_root.transform;
         m_prefabName = GetType().Name;
     }
     
@@ -217,6 +217,7 @@ public abstract class UIComponent : IComparable
     {
         OnDestroy();
         m_isDestroyed = true;
+        DestoryAllChildComponent();
         GameObject.Destroy(m_gameObjectOuter);
         m_gameObjectOuter = null;
 
@@ -281,7 +282,7 @@ public abstract class UIComponent : IComparable
     /// <summary>
     /// 销毁改UIWindow下的所有子控件
     /// </summary>
-    protected void DestoryAllChildComponent()
+    public void DestoryAllChildComponent()
     {
         foreach (UIComponent component in m_childComponents)
         {
@@ -290,7 +291,7 @@ public abstract class UIComponent : IComparable
         m_childComponents.Clear();
     }
 
-    protected void DestoryChildComponent(UIComponent comp)
+    public void DestoryChildComponent(UIComponent comp)
     {
         m_childComponents.Remove(comp);
         comp.Destroy();

@@ -23,42 +23,22 @@ public class Actor : Singleton<Actor>, MessageListener
     {
         Debug.Log("Use card invoked: "+data);
         CardData cd = FightController.Instance.m_actingEntity.Index2Card(data);
+        if (cd == null)
+        {
+            Debug.Log("未找到卡牌ID: "+data);
+        }
         FightController.Instance.UseCard(cd, l1, l2);
-
     }
-
-    public void Damage(int d, float f)
+    public void EndTurn(int team)
     {
-        Debug.Log("Actor Damage function \n");
-        Debug.Log(d);
-        Debug.Log(f);
-    }
-    public void Trans(ParamTest ts)
-    {
-        Debug.Log("Actor ParamTest function \n");
-        Debug.Log(ts.i);
-        Debug.Log(ts.b);
+        if(FightController.Instance.m_actingEntity!=null && 
+            team == FightController.Instance.m_actingEntity.team)
+        {
+            FightController.Instance.EndTurn();
+        }
+        
     }
 
-    public void Trans2(ParamTest2 ts2, ParamTest ts)
-    {
-        Debug.Log("Actor ParamTest function \n");
-        Debug.Log(ts2.ts.i);
-        Debug.Log(ts2.ts.b);
-        Debug.Log(ts2.b);
-        Debug.Log(ts.i);
-        Debug.Log(ts.b);
-    }
-
-    public void SuccessMatch(int teamID,int seed)
-    {
-        Debug.Log("Successful start the Game\n");
-        NumUtil.NewState(seed);
-        FightController.Instance.NewFight();
-        FightController.Instance.AddEntity(GameController.Instance.m_player, teamID);
-        Entity test = FightingData.g_characterTable["ava"].toEntity();
-        FightController.Instance.AddEntity(test, 1);
-    }
 
     //下面这个是通信管道
     public string Identity()

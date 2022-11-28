@@ -6,7 +6,7 @@ using System.Collections.Generic;
 /// 继承时确保类具有无参数构造函数。
 /// </summary>
 /// <typeparam name="T">唯一实例的具体类</typeparam>
-public abstract class Singleton<T> where T : new()
+public abstract class Singleton<T> where T : Singleton<T>,new()
 {
     private static T _instance;
 
@@ -49,6 +49,19 @@ public abstract class Singleton<T> where T : new()
     /// </summary>
     public static void Reset()
     {
-        _instance = new T();
+        if (_instance != null)
+        {
+            _instance.onReset();
+        }
+        _instance = null;
+    }
+
+    /// <summary>
+    /// 当对象被重置时调用，
+    /// 可以理解为单例对象的析构函数。
+    /// </summary>
+    protected virtual void onReset()
+    {
+
     }
 }

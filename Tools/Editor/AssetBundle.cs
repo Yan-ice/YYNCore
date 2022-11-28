@@ -12,6 +12,7 @@ public class AssetBundleCompile
 
     public static void compileAB(string packname)
     {
+       
         copyDir(packname, packname);
         AssetImporter assetImporter = AssetImporter.GetAtPath(target_root+packname);
         assetImporter.assetBundleName = packname;
@@ -73,8 +74,8 @@ public class AssetBundleCompile
 }
 public class CreateAssetBundles
 {
-    [MenuItem("Assets/Build AssetBundlePack")]
-    static void BuildAllAssetBundles()
+    [MenuItem("Assets/Build Default Pack")]
+    static void BuildDefault()
     {
         string assetBundleDirectory = "AssetBundlePack";
         if (Directory.Exists(assetBundleDirectory))
@@ -89,4 +90,28 @@ public class CreateAssetBundles
                                         BuildAssetBundleOptions.ChunkBasedCompression,
                                         BuildTarget.StandaloneWindows);
     }
+
+    [MenuItem("Assets/Build Combat Pack")]
+    static void BuildCombat()
+    {
+        AssetBundleCompile.compileAB("combatpack");
+        AssetBundleCompile.compileAB("op_pack");
+
+        build();
+    }
+
+    private static void build()
+    {
+        string assetBundleDirectory = "AssetBundlePack";
+        if (Directory.Exists(assetBundleDirectory))
+        {
+            Directory.Delete(assetBundleDirectory, true);
+        }
+        Directory.CreateDirectory(assetBundleDirectory);
+
+        BuildPipeline.BuildAssetBundles(assetBundleDirectory,
+                                        BuildAssetBundleOptions.ChunkBasedCompression,
+                                        BuildTarget.StandaloneWindows);
+    }
+
 }

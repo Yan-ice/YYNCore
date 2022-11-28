@@ -9,6 +9,13 @@ using UnityEngine.Events;
 
 public abstract class Event
 {
+    public static int BATTLE_EVENT = 0;
+    public static int WORLD_EVENT = 1;
+    public static int GLOBAL_EVENT = 2;
+    public virtual int EventType()
+    {
+        return 0;
+    }
 }
 
 public interface EventListener<T> where T : Event 
@@ -24,6 +31,9 @@ public class EventCenter : Singleton<EventCenter>
 {
     private Dictionary<Type, List<object>> actions = new Dictionary<Type, List<object>>();
 
+    /// <summary>
+    /// 注册一个事件监听器。
+    /// </summary>
     public void regAction<T>(EventListener<T> action) where T : Event
     {
         if (actions.ContainsKey(typeof(T)))
@@ -37,6 +47,9 @@ public class EventCenter : Singleton<EventCenter>
         }
     }
 
+    /// <summary>
+    /// 注销一个事件监听器。
+    /// </summary>
     public void unregAction<T>(EventListener<T> action) where T : Event
     {
         if (actions.ContainsKey(typeof(T)))
@@ -47,19 +60,33 @@ public class EventCenter : Singleton<EventCenter>
             }
         }
     }
+    
+    /// <summary>
+    /// 立刻注销一类事件的所有监听器（用于状态复位）
+    /// </summary>
+    /// <param name="type"></param>
+    public void unregAllActions<T>() where T: Event
+    {
+        foreach(Type key in actions.Keys)
+        {
+            if (typeof(T) == key)
+            {
+                actions[key].Clear();
+            }
+            
+        }
+    }
 
+    /// <summary>
+    /// 触发一个事件，通知所有监听该事件的监听器。
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="e"></param>
     public void trigger<T>(T e) where T : Event
     {
         //Debug.Log("Triggering event " + e.GetType());
         if (!actions.ContainsKey(e.GetType())){
             return;
-        }
-        foreach(object t in actions[typeof(T)])
-        {
-            if(!(t is EventListener<T>))
-            {
-                Debug.LogError("WARN: inconsist type!");
-            }
         }
             actions[typeof(T)].Sort(
                 (object a, object b) =>
@@ -84,5 +111,6 @@ public class EventCenter : Singleton<EventCenter>
             ((EventListener<T>)(actions[typeof(T)][i])).callback(e);
         }
     }
+
 }
 

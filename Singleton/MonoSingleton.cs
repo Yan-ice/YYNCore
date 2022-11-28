@@ -8,6 +8,10 @@ public abstract class MonoSingleton<T> : MonoBehaviour where T : MonoBehaviour
 
     private static bool m_appQuitting;
 
+    public static void Init()
+    {
+        GameObject g = Instance.gameObject;
+    }
     public static T Instance
     {
         get
@@ -45,10 +49,15 @@ public abstract class MonoSingleton<T> : MonoBehaviour where T : MonoBehaviour
             }
         }
     }
+    
+    protected virtual void onInit()
+    {
+
+    }
 
     private void Awake()
     {
-        m_appQuitting = false;
+        m_appQuitting = false;onInit();
     }
 
     private void OnDestroy()

@@ -9,7 +9,7 @@ public abstract class UIWindow : UIComponent
     
     public UIWindow()
     {
-        SetParent(UIManager.m_root.transform);
+        SetParent(UIManager.Instance.m_root.transform);
     }
     /// <summary>
     /// 刷新窗口

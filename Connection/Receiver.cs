@@ -21,15 +21,8 @@ public class Receiver: Singleton<Receiver>
         ms.add("function_name", name);
         for (int i = 0; i < list.Length; i++)
         {
-            if ((i % 2) == 0)
-            {
-                //ms.add("Type" + (i/2).ToString(), Convert.ToString(list[i]));
-                ms.addObj<Type>("Type" + (i / 2).ToString(), (Type)list[i]);
-            }
-            else
-            {
-                ms.addObject("Value" + (i / 2).ToString(), (Type)list[i - 1], list[i]); //第二个参数是把type传进去
-            }
+            ms.addObj<Type>("Type" + i, list[i].GetType());
+            ms.addObject("Value" + i, list[i].GetType(), list[i]); //第二个参数是把type传进去
 
         }
         client_socket.send(ms);
@@ -45,11 +38,24 @@ public class Receiver: Singleton<Receiver>
         }
         else
         {
-            invoke((string)System.Reflection.MethodBase.GetCurrentMethod().Name, id_data.GetType(), id_data, l1.GetType(), l1, l2.GetType(), l2);
+            invoke((string)System.Reflection.MethodBase.GetCurrentMethod().Name, id_data, l1, l2);
 
         }
-
     }
+    public void EndTurn(int team)
+    {
+        if (LOCAL)
+        {
+            Actor.Instance.EndTurn(FightController.Instance.team);
+        }
+        else
+        {
+            invoke((string)System.Reflection.MethodBase.GetCurrentMethod().Name, team);
+
+        }
+    }
+
+
     public bool GetWhetherConnectSuccess()
     {
         return client_socket.whether_connectting;

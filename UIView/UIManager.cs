@@ -4,13 +4,36 @@ using System.Threading;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
+class UIState
+{
+    public Canvas m_root;
+    public Dictionary<Type, UIWindow> m_windows = new Dictionary<Type, UIWindow>();
+
+    public void setEnable(bool e)
+    {
+        m_root.gameObject.SetActive(e);
+    }
+
+    public void destroy()
+    {
+        foreach(UIWindow w in m_windows.Values)
+        {
+            w.Destroy();
+        }
+        GameObject.DestroyImmediate(m_root.gameObject);
+    }
+}
 public class UIManager : Singleton<UIManager>
 {
     public static Camera m_UICamera;
     public static EventSystem m_eventSystem;
-    public static Canvas m_root;
 
-    private Dictionary<Type, UIWindow> m_windows = new Dictionary<Type, UIWindow>();
+    private GameObject root_model;
+    private UIState state;
+    private Stack<UIState> state_stack = new Stack<UIState>();
+    public Canvas m_root { get { return state.m_root; } }
+    private Dictionary<Type, UIWindow> m_windows { get { return state.m_windows; } }
+
     private List<UIWindow> m_winOrder = new List<UIWindow>();
 
     public UIManager()
@@ -18,15 +41,47 @@ public class UIManager : Singleton<UIManager>
         GameObject UI_root = GameObject.Instantiate(Resources.Load<GameObject>("UICamera"));
         GameObject.DontDestroyOnLoad(UI_root);
 
-        m_root = UI_root.transform.GetChild(0).GetComponent<Canvas>();
         m_UICamera = UI_root.GetComponent<Camera>();
+        root_model = UI_root.transform.GetChild(0).gameObject;
         m_eventSystem = UI_root.transform.GetChild(1).GetComponent<EventSystem>();
+
+        state = getNewState();
+    }
+    
+    private UIState getNewState()
+    {
+        UIState new_state = new UIState();
+        new_state.m_root = GameObject.Instantiate(root_model, m_UICamera.transform).GetComponent<Canvas>();
+        new_state.m_windows = new Dictionary<Type, UIWindow>();
+        return new_state;
     }
 
+    public void startNewState()
+    {
+        state.setEnable(false);
+        state_stack.Push(state);
+        state = getNewState();
+    }
+
+    public void restoreState()
+    {
+        state.destroy();
+        if (state_stack.Count > 0)
+        {
+            state = state_stack.Pop();
+            state.setEnable(true);
+        }
+        else
+        {
+            state = getNewState();
+            Debug.LogAssertion("restoring to a default UI state.");
+        }
+        
+    }
     public static Vector2 ScreenToCanvas(Vector2 screenPoint)
     {
         Vector2 v;
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(UIManager.m_root.GetComponent<RectTransform>(),
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(Instance.state.m_root.GetComponent<RectTransform>(),
             screenPoint, m_UICamera, out v);
         return v;
 

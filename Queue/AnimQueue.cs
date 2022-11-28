@@ -35,13 +35,13 @@ public class st
         startFinish = new List<st>();
     }
 };
-public class Queue : Destroyable
+public class AnimQueue : Destroyable
 {
     public int currentTime = 0;
     public List<st> playingQueue = new List<st>();
     public List<st> addList = new List<st>();
     public st previous = null;
-    public Queue()
+    public AnimQueue()
     {
         MonoUpdateManager.Instance.AddUpdateListener(Update);
     }

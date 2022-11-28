@@ -57,7 +57,7 @@ public class ResourceManager : Singleton<ResourceManager>
    
     public Sprite LoadImage(string space, string name)
     {
-        string path = "Image/" + space + "/" + name;
+        string path = "image/" + space + "/" + name;
         Sprite txt = Resources.Load<Sprite>(path);
         if (txt == null)
         {
@@ -69,7 +69,7 @@ public class ResourceManager : Singleton<ResourceManager>
 
     public GameObject LoadPrefab(string space, string name)
     {
-        string path = "Prefab/" + space + "/" + name;
+        string path = "prefab/" + space + "/" + name;
         GameObject txt = Resources.Load<GameObject>(path);
         if (txt == null)
         {

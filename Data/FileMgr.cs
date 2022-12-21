@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Text;
-using Newtonsoft.Json;
 using SQLite4Unity3d;
 
 using UnityEngine;
@@ -154,22 +153,6 @@ public class FileMgr
     {
         path = convertToAbsolute(path);
         return Directory.Exists(path) || File.Exists(path);
-    }
-    public static void saveJsonObjToFile<T>(string path, T obj)
-    {
-        string data = JsonConvert.SerializeObject(obj, Formatting.Indented);
-        byte[] binary = Encoding.UTF8.GetBytes(data);
-        saveBinaryToFile(path, binary);
-    }
-
-    public static T readJsonObjectFromFile<T>(string path)
-    {
-        string data = Encoding.UTF8.GetString(readBinaryFromFile(path));
-        if (data.Length > 1)
-        {
-            return JsonConvert.DeserializeObject<T>(data);
-        }
-        return default(T);
     }
 
     public static void saveBinaryToFile(string path, byte[] binary)

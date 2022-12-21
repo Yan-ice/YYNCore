@@ -136,15 +136,17 @@ class MonoController : MonoBehaviour
     byte x = 0;
     void FixedUpdate()
     {
+        fixedUpdateEvent?.Invoke();
+    }
+    private void Update()
+    {
         x++;
-        if (speed==3 || (x % 2 == 0 && speed==2))
+        if (speed == 3 || (x % 2 == 0 && speed == 2))
         {
             updateEvent?.Invoke();
         }
         updateEvent?.Invoke();
 
-        
-        fixedUpdateEvent?.Invoke();
     }
 
     public void AddFixedUpdateListener(UnityAction fun)

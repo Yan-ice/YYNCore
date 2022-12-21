@@ -7,19 +7,13 @@ using UnityEngine;
 using UnityEngine.Events;
 
 
-public abstract class Event
-{
-    public static int BATTLE_EVENT = 0;
-    public static int WORLD_EVENT = 1;
-    public static int GLOBAL_EVENT = 2;
-    public virtual int EventType()
-    {
-        return 0;
-    }
-}
-
 public interface EventListener<T> where T : Event 
 {
+    /// <summary>
+    /// 优先级越高的监听器将会越 先 触发！
+    /// </summary>
+    /// <param name="evt"></param>
+    /// <returns></returns>
     public int priority(T evt);
 
     public void callback(T evt);
@@ -84,17 +78,13 @@ public class EventCenter : Singleton<EventCenter>
     /// <param name="e"></param>
     public void trigger<T>(T e) where T : Event
     {
-        //Debug.Log("Triggering event " + e.GetType());
+        Debug.Log("Triggering event " + e.GetType());
         if (!actions.ContainsKey(e.GetType())){
             return;
         }
             actions[typeof(T)].Sort(
                 (object a, object b) =>
                 {
-                    if (!(a is EventListener<T>) || !(b is EventListener<T>))
-                    {
-                        Debug.Log("WARN: inconsist type!");
-                    }
                     if (a == null || b == null)
                     {
                         Debug.Log("WARN: null!");

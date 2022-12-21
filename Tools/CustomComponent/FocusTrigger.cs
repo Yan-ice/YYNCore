@@ -4,10 +4,11 @@ using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-    public class FocusTrigger : MonoBehaviour,IPointerEnterHandler,IPointerExitHandler
+    public class FocusTrigger : MonoBehaviour,IPointerEnterHandler,IPointerExitHandler, IPointerDownHandler, IPointerUpHandler
     {
         public UnityEvent onFocus = new UnityEvent();
         public UnityEvent onExit = new UnityEvent();
+        public UnityEvent onUp = new UnityEvent();
 
         public void OnPointerEnter(PointerEventData eventData)
         {
@@ -19,6 +20,14 @@ using UnityEngine.UI;
             onExit.Invoke();
         }
 
-    }
+        public void OnPointerDown(PointerEventData eventData)
+        {
+            onFocus.Invoke();
+        }
+        public void OnPointerUp(PointerEventData eventData)
+        {
+            onUp.Invoke();
+        }
+}
 
 

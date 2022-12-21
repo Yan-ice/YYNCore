@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+﻿
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -28,29 +28,6 @@ class Encryptor
             byte[] utf8 = Encoding.UTF8.GetBytes(DESEncrypt(cutend));
             //Log.Message("发送转码:" + Encoding.UTF8.GetString(utf8) + "$");
             socket.Send(Encoding.UTF8.GetBytes(Encoding.UTF8.GetString(utf8) + "$"));//发送TCP信息
-    }
-
-    public static string EncryptObject<T>(T obj)
-    {
-        string s = JsonConvert.SerializeObject(obj);
-        return DESEncrypt(s);
-    }
-
-    public static string EncryptObject(Type t, object obj)
-    {
-        string s = JsonConvert.SerializeObject(obj, t, (JsonSerializerSettings)null);
-        return DESEncrypt(s);
-    }
-
-    public static T DecryptObject<T>(string obj)
-    {
-        string s = DESDecrypt(obj);
-        return JsonConvert.DeserializeObject<T>(s);
-    }
-    public static object DecryptObject(Type t, string obj)
-    {
-        string s = DESDecrypt(obj);
-        return JsonConvert.DeserializeObject(s,t, (JsonSerializerSettings)null);
     }
 
     #region DESCryptoService对称加密

@@ -37,7 +37,7 @@ public class RectSelecter : UIWindow
     }
     private void OnClickCancelBtn()
     {
-        Hide();
+        DestroyImmediate();
     }
     #endregion
 
@@ -48,21 +48,12 @@ public class RectSelecter : UIWindow
         
     }
 
-    protected override void OnHide()
-    {
-        Destroy();
-    }
-
     protected override void OnInit(GameObject m_go)
     {
         m_mono = FindChildComponent<RectSelecterMono>("m_btnBlocker");
         m_mono.lighter = m_rectLighter;
     }
 
-    protected override void OnShow()
-    {
-        
-    }
     protected override int SortOrder()
     {
         return 9999;
@@ -117,9 +108,9 @@ public class RectSelecterMono : MonoBehaviour, IPointerDownHandler, IEndDragHand
         }
         else
         {
-            te.text = string.Format("{0},{1},{2},{3}", (int)lighter.localPosition.x, (int)lighter.localPosition.y, (int)lighter.rect.width, (int)lighter.rect.height);
+            te.text = string.Format("{0},{1},{2},{3}", (int)lighter.localPosition.x, (int)(lighter.localPosition.x + lighter.rect.width),
+                (int)(lighter.localPosition.y - lighter.rect.height), (int)(lighter.localPosition.y));
             te.SelectAll();
-
         }
         te.Copy();
         lighter.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, 0);

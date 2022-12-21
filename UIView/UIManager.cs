@@ -18,7 +18,7 @@ class UIState
     {
         foreach(UIWindow w in m_windows.Values)
         {
-            w.Destroy();
+            w.DestroyImmediate();
         }
         GameObject.DestroyImmediate(m_root.gameObject);
     }
@@ -226,7 +226,7 @@ public class UIManager : Singleton<UIManager>
 
             if (!w.m_isDestroyed)
             {
-                w.Destroy();
+                w.DestroyImmediate();
             }
 
             m_winOrder.Remove(w);

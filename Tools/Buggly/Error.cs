@@ -43,21 +43,11 @@ class Error : UIWindow
         
     }
 
-    protected override void OnHide()
-    {
-        
-    }
 
     protected override void OnInit(GameObject m_go)
     {
        
     }
-
-    protected override void OnShow()
-    {
-        
-    }
-
 
     protected override int SortOrder()
     {

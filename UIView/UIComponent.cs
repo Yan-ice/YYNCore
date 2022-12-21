@@ -3,17 +3,21 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public abstract class UIComponent : IComparable
+
+public abstract class UIComponent : Destroyable, IComparable
 {
+    private AnimQueue ui_queue = new AnimQueue();
+
     protected List<UIComponent> m_childComponents = new List<UIComponent>();
 
     protected GameObject m_gameObjectOuter;
     protected Transform m_parent;
+
     public UIComponent m_root { get; set; }
     private string m_prefabName;
 
     public bool m_isDestroyed { get; private set; }
-    public bool m_isShowing { get; protected set; } = false;
+    public bool m_isShowing { get; private set; } = false;
     private int m_currentLayer = -1;
 
     public UIComponent()
@@ -21,29 +25,12 @@ public abstract class UIComponent : IComparable
         m_parent = UIManager.Instance.m_root.transform;
         m_prefabName = GetType().Name;
     }
-    
-    public void LoadByObject(GameObject loaded_object)
-    {
 
-        if (m_gameObjectOuter != null)
-        {
-            Destroy();
-        }
-        if (loaded_object == null)
-        {
-            Log.Message("UIComponent进行LoadByObject时发现对象为空！");
-            return;
-        }
-        m_gameObjectOuter = loaded_object;
-        m_parent = loaded_object.transform.parent;
-        m_prefabName = GetType().Name;
-        ComponentInit();
-        OnInit(m_gameObjectOuter);
-    }
     public UIComponent(Transform parent)
     {
         m_parent = parent;
     }
+
     public void SetParent(Transform parent)
     {
         m_parent = parent;
@@ -60,15 +47,6 @@ public abstract class UIComponent : IComparable
         if (r.anchoredPosition.Equals(location)) return false;
         r.anchoredPosition = location;
         return true;
-    }
-
-    /// <summary>
-    /// 显示组件
-    /// </summary>
-    public virtual void Show()
-    {
-        m_gameObjectOuter.transform.localScale = Vector3.one;
-        //m_gameObject_outer.SetActive(true);
     }
 
     public void LoadLayer(int id)
@@ -131,7 +109,7 @@ public abstract class UIComponent : IComparable
         {
             if (m_gameObjectOuter != null)
             {
-                Destroy();
+                DestroyImmediate();
             }
 
             m_gameObjectOuter = GameObject.Instantiate((GameObject)obj, m_parent);
@@ -157,11 +135,6 @@ public abstract class UIComponent : IComparable
             m_isDestroyed = false;
             ComponentInit();
             OnInit(m_gameObjectOuter);
-            //调用初始化
-            if (m_isShowing)
-            {
-                Show();
-            }
         }
         else
         {
@@ -211,18 +184,26 @@ public abstract class UIComponent : IComparable
     }
 
     /// <summary>
-    /// 销毁窗口
+    /// 立刻马上销毁窗口，不调用Hide()
     /// </summary>
-    public void Destroy()
+    public void DestroyImmediate()
     {
         OnDestroy();
         m_isDestroyed = true;
         DestoryAllChildComponent();
         GameObject.Destroy(m_gameObjectOuter);
         m_gameObjectOuter = null;
-
     }
 
+    /// <summary>
+    /// 销毁窗口，但是如果正在显示则会先调用Hide播放隐藏动画
+    /// </summary>
+    public void Destroy()
+    {
+        Hide();
+        m_isDestroyed = true;
+        ui_queue.EnqueueSimpleAction(DestroyImmediate);
+    }
 
     /// <summary>
     /// 提供给ScriptGenerator工具，初始化时被调用。
@@ -231,19 +212,76 @@ public abstract class UIComponent : IComparable
     {
 
     }
+
     /// <summary>
     /// 初始化时被调用
     /// </summary>
     /// <param name="m_go">窗口预制件</param>
-    protected abstract void OnInit(GameObject m_go);
+    protected virtual void OnInit(GameObject m_go) { }
 
     /// <summary>
     /// 销毁时被调用
     /// </summary>
-    protected abstract void OnDestroy();
+    protected virtual void OnDestroy() { }
 
     /// <summary>
-    /// 提供物件层级，
+    /// 窗口显示动画
+    /// </summary>
+    protected virtual IEnumerable<int> OnShow() { yield break; }
+
+    /// <summary>
+    /// 窗口隐藏动画
+    /// </summary>
+    protected virtual IEnumerable<int> OnHide() { yield break; }
+
+    /// <summary>
+    /// 显示组件
+    /// </summary>
+    public void Show()
+    {
+        if (m_isDestroyed || m_isShowing) return;
+        m_isShowing = true;
+
+        if (m_gameObjectOuter != null)//有一些UI组件压根没有m_gameObject_outer
+        {
+            m_gameObjectOuter.transform.localScale = Vector3.one;
+            m_gameObjectOuter.SetActive(true);
+        }
+
+        ui_queue.EnqueueAction(OnShow());
+    }
+
+    /// <summary>
+    /// 隐藏组件
+    /// </summary>
+    public void Hide()
+    {
+        if (m_isDestroyed || !m_isShowing) return;
+        m_isShowing = false;
+        ui_queue.EnqueueAction(OnHide());
+        if (m_gameObjectOuter != null)//有一些UI组件压根没有m_gameObject_outer
+        {
+            ui_queue.EnqueueSimpleAction(() =>
+            {
+                m_gameObjectOuter.transform.localScale = Vector3.zero;
+                m_gameObjectOuter.SetActive(false);
+            });
+        }
+
+    }
+
+    /// <summary>
+    /// 返回该窗口是否正在显示
+    /// </summary>
+    /// <returns>窗口状态</returns>
+    public bool IsShowing()
+    {
+        return !m_isDestroyed && m_isShowing;
+    }
+
+
+    /// <summary>
+    /// 提供物件层级。
     /// </summary>
     protected virtual int SortOrder()
     {
@@ -274,9 +312,57 @@ public abstract class UIComponent : IComparable
         {
             component.SetLocation(parent, Vector2.zero);//设置父组件和坐标
         }
-        component.Show();//展示
+        component.Show();
         m_childComponents.Add(component);//容器储存，方便集体销毁
         return component;
+    }
+
+    public T CreateUIComponent<T>(GameObject parent) where T : UIComponent, new()
+    {
+        RectTransform rect = parent.GetComponent<RectTransform>();
+        if (rect == null)
+        {
+            Debug.LogError("UIComponent的根必须含有RectTransform控件！");
+            return null;
+        }
+        return CreateUIComponent<T>(parent.GetComponent<RectTransform>());
+    }
+
+    /// <summary>
+    /// 创建子控件，如果parent为空，则实例化在window同级目录。
+    /// </summary>
+    /// <typeparam name="T">控件类型</typeparam>
+    /// <param name="path">路径</param>
+    /// <returns></returns>
+    protected UIComponent CreateUIComponent(Type t, RectTransform parent)
+    {
+        if(!typeof(UIComponent).IsAssignableFrom(t))
+        {
+            Debug.LogError(t.Name + "并不是UIComponent类型！");
+            return null;
+        }
+        UIComponent component = (UIComponent)System.Activator.CreateInstance(t);
+        component.m_root = this;
+        component.LoadLayer(0);//初始化
+        if (parent != null)
+        {
+            component.SetLocation(parent, Vector2.zero);//设置父组件和坐标
+        }
+        component.Show();
+        m_childComponents.Add(component);//容器储存，方便集体销毁
+        return component;
+    }
+
+    protected UIComponent CreateUIComponent(Type t, GameObject parent)
+    {
+        RectTransform rect = parent.GetComponent<RectTransform>();
+        if (rect == null)
+        {
+            Debug.LogError("UIComponent的根必须含有RectTransform控件！");
+            return null;
+        }
+
+        return CreateUIComponent(t, parent.GetComponent<RectTransform>());
     }
 
     /// <summary>
@@ -286,7 +372,7 @@ public abstract class UIComponent : IComparable
     {
         foreach (UIComponent component in m_childComponents)
         {
-            component.Destroy();
+            component.DestroyImmediate();
         }
         m_childComponents.Clear();
     }
@@ -294,7 +380,7 @@ public abstract class UIComponent : IComparable
     public void DestoryChildComponent(UIComponent comp)
     {
         m_childComponents.Remove(comp);
-        comp.Destroy();
+        comp.DestroyImmediate();
 
     }
 }

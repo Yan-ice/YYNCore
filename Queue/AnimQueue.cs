@@ -4,99 +4,99 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 
-public class ResetableEnumerator<T> : IEnumerator<T>
-{
-    public IEnumerator<T> Enumerator { get; set; }
-    public Func<IEnumerator<T>> ResetFunc { get; set; }
-
-    public T Current { get { return Enumerator.Current; } }
-    public void Dispose() { Enumerator.Dispose(); }
-    object IEnumerator.Current { get { return Current; } }
-    public bool MoveNext() { return Enumerator.MoveNext(); }
-    public void Reset() { Enumerator = ResetFunc(); }
-}
-
 public enum AnimType
 {
     After, OnTime
 }
 
-public class st
+public class DelayedAnim
 {
-    public IEnumerator<int> e;
-    public long startDelayTime, delayTime;
-    public List<st> startOnTime;
-    public List<st> startFinish;
-    public st (IEnumerator<int> e, int delayTime)
+    public AnimType type;
+    private IEnumerator<int> e;
+    private int delayTime;
+    private bool hasNext = true;
+
+    public DelayedAnim (IEnumerator<int> e, int delayTime)
     {
         this.e = e;
         this.delayTime = delayTime;
-        startOnTime = new List<st>();
-        startFinish = new List<st>();
+    }
+
+    public bool Next()
+    {
+        if (!hasNext) return false;
+
+        if(delayTime > 0)
+        {
+            delayTime--;
+            return true;
+        }
+        if (e == null)
+        {
+            hasNext = false; return false;
+        }
+        hasNext = e.MoveNext();
+        return hasNext;
     }
 };
 public class AnimQueue : Destroyable
 {
-    public int currentTime = 0;
-    public List<st> playingQueue = new List<st>();
-    public List<st> addList = new List<st>();
-    public st previous = null;
-    public AnimQueue()
-    {
-        MonoUpdateManager.Instance.AddUpdateListener(Update);
-    }
+    private Queue<DelayedAnim> waitQueue = new Queue<DelayedAnim>();
+    private DelayedAnim wait_top = null;
+    private List<DelayedAnim> playingQueue = new List<DelayedAnim>();
+
+    bool isDestroyed = false;
+    bool isUsed = false;
+
     public void Destroy()
     {
-        MonoUpdateManager.Instance.RemoveUpdateListener(Update);
+        isDestroyed = true;
     }
-
-    private IEnumerable<int> empty()
+    public void DestroyImmediate()
     {
-        yield return 0;
-    }
-
-    public void BeginPlaying(st p)
-    {
-        p.startDelayTime = currentTime + 1;
-        addList.Add(p);
-    }
-
-    //一个会被每帧调用的函数。用它来负责让动画move next吧
-    public void Update()
-    {
-        currentTime += 1;
-        List<st> deleteList = new List<st>();
-        foreach(st now in playingQueue)
+        isDestroyed = true;
+        if (isUsed)
         {
-            if(now.delayTime + now.startDelayTime <= currentTime)
+            isUsed = false;
+            waitQueue = null;
+            playingQueue = null;
+            wait_top = null;
+            MonoUpdateManager.Instance.RemoveFixUpdateListener(Update);
+        }
+    }
+
+    private void Update()
+    {
+        //播放当前动画
+        if (playingQueue.Count > 0)
+        {
+            bool hs = false;
+            foreach(DelayedAnim a in playingQueue)
             {
-                if (now.delayTime + now.startDelayTime == currentTime)
-                {
-                    foreach(st nex in now.startOnTime)
-                    {
-                        BeginPlaying(nex);
-                    }
-                }
-                bool hasNext = now.e.MoveNext();
-                if(hasNext == false)
-                {
-                    foreach (st nex in now.startFinish)
-                    {
-                        BeginPlaying(nex);
-                    }
-                    deleteList.Add(now);
-                }
+                if (a.Next()) hs = true;
             }
+
+            if (!hs)
+            {
+                playingQueue.Clear();
+            }
+
+            return;
         }
-        foreach(st delete in deleteList)
+
+        //已销毁
+        if (isDestroyed) DestroyImmediate();
+
+        //没有新的动画
+        if (wait_top == null) return;
+
+        //新增一批动画
+        do
         {
-            playingQueue.Remove(delete);
-        }
-        foreach(st add in addList)
-        {
-            playingQueue.Add(add);
-        }
-        addList.Clear();
+            playingQueue.Add(wait_top);
+            wait_top = waitQueue.Count > 0 ? waitQueue.Dequeue() : null;
+        } while (wait_top != null && wait_top.type == AnimType.OnTime);
+
     }
 
     //该函数为对外的接口：
@@ -111,58 +111,46 @@ public class AnimQueue : Destroyable
     //delay: 延迟多久后才开始动画，一定大于等于0。
     public void EnqueueAction(IEnumerable<int> e, AnimType type = AnimType.After, int delay = 0)
     {
-        
-        st insert = new st(e.GetEnumerator(), delay);
-        if (previous == null || playingQueue.Count==0)
+        if (isDestroyed) return;
+
+        if (!isUsed)
         {
-            insert.startDelayTime = currentTime + 1;
-            playingQueue.Add(insert);
+            MonoUpdateManager.Instance.AddFixUpdateListener(Update);
+            isUsed = true;
+        }
+
+        DelayedAnim insert = new DelayedAnim(e.GetEnumerator(), delay);
+        insert.type = type;
+
+        if (wait_top == null)
+        {
+            wait_top = insert;
         }
         else
         {
-            if(type == AnimType.OnTime)
-            {
-                previous.startOnTime.Add(insert);
-            }
-            else
-            {
-                previous.startFinish.Add(insert);
-            }
+            waitQueue.Enqueue(insert);
         }
-        Debug.Log(playingQueue.Count);
-        previous = insert;
     }
 
-    //该函数为对外的接口：
-    //使用者在使用该系统时，希望能够通过该函数让一个个动画入栈，
-    //入栈的动画应自动播放。
-    //对于传入的动画，应每帧move next一次（同Unity的协程机制），
-    //在一个动画播完后，从队列中移除，开始move next队列中的另一动画。
-    //
-    //参数：
-    //e: 动画
-    //type: 动画类型，与上一动画同时，或上一动画后。
-    //delay: 延迟多久后才开始动画，一定大于等于0。
-    public void EnqueueEmpty(AnimType type = AnimType.After, int delay = 0)
+    class SimpleFuncEntity
     {
-        st insert = new st(empty().GetEnumerator(), delay);
-        if (previous == null)
+        Action action;
+        public SimpleFuncEntity(Action a)
         {
-            insert.startDelayTime = currentTime + 1;
-            playingQueue.Add(insert);
+            action = a;
         }
-        else
+        public IEnumerable<int> act()
         {
-            if (type == AnimType.OnTime)
-            {
-                previous.startOnTime.Add(insert);
-            }
-            else
-            {
-                previous.startFinish.Add(insert);
-            }
+            if(action!=null)
+                action.Invoke();
+            yield return 0;
         }
-        previous = insert;
+    }
+
+    public void EnqueueSimpleAction(Action action, AnimType type = AnimType.After, int delay = 0)
+    {
+        IEnumerable<int> i = new SimpleFuncEntity(action).act();
+        EnqueueAction(i,type,delay);
     }
 
 }

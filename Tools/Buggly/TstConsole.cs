@@ -91,17 +91,19 @@ class TstConsole : UIWindow
 		return 10081;
     }
 
-    protected override void OnShow()
+    protected override IEnumerable<int> OnShow()
     {
         m_scrollView.enabled = true;
         m_textContent.text = logs;
         m_textContent.transform.localPosition = Vector2.zero;
+        yield return 0;
     }
 
-    protected override void OnHide()
+    protected override IEnumerable<int> OnHide()
     {
         m_inputInput.text = "";
         m_scrollView.enabled = false;
+        yield return 0;
     }
 
     

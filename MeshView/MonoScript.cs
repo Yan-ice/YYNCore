@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 
-public interface MonoScript<T> : Destroyable where T : MonoBehaviour
+public interface MonoScript<T> where T : MonoBehaviour
 {
     public T m_monoObject { get; }
 }

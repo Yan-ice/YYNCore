@@ -21,7 +21,9 @@ public class AnimPlayer : Singleton<AnimPlayer>
 
     public void Play(IEnumerable<int> p)
     {
-        addList.Add(p.GetEnumerator());
+        IEnumerator<int> i = p.GetEnumerator();
+        i.MoveNext();
+        addList.Add(i);
     }
 
     //一个会被每帧调用的函数。用它来负责让动画move next吧

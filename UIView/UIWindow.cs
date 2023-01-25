@@ -6,6 +6,11 @@ using UnityEngine.UI;
 
 public abstract class UIWindow : UIComponent
 {
+    /// <summary>
+    /// 该变量决定加载UI控件资源的目录。
+    /// </summary>
+    public static new string RESOURCE_ROOT = "UIPrefab";
+
     public UIWindow()
     {
         SetParent(UIManager.Instance.m_root.transform);

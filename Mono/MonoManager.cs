@@ -7,10 +7,13 @@ using UnityEngine.Events;
 
 public class MonoUpdateManager : Singleton<MonoUpdateManager>
 {
+    public static int frameRate = 50;
     private MonoController controller;
+
 
     public MonoUpdateManager()
     {
+        Application.targetFrameRate = 50;
         GameObject obj = new GameObject("MonoController");
         GameObject.DontDestroyOnLoad(obj);
         controller = obj.AddComponent<MonoController>();
@@ -134,6 +137,7 @@ class MonoController : MonoBehaviour
     }
 
     byte x = 0;
+
     void FixedUpdate()
     {
         fixedUpdateEvent?.Invoke();

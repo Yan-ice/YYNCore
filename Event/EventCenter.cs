@@ -20,6 +20,25 @@ public interface EventListener<T> where T : Event
 
 }
 
+class SimpleEventListener<T> : EventListener<T> where T : Event
+{
+    public Action<T> m_action;
+    int m_priority;
+    public SimpleEventListener(Action<T> ac, int pri)
+    {
+        m_action = ac;
+        m_priority = pri;
+    }
+    public void callback(T evt)
+    {
+        m_action?.Invoke(evt);
+    }
+
+    public int priority(T evt)
+    {
+        return m_priority;
+    }
+}
 
 public class EventCenter : Singleton<EventCenter>
 {
@@ -38,6 +57,47 @@ public class EventCenter : Singleton<EventCenter>
         {
             actions.Add(typeof(T), new List<object>());
             actions[typeof(T)].Add(action);
+        }
+    }
+
+    /// <summary>
+    /// 注册一个简单事件监听器。
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="action"></param>
+    /// <param name="priority"></param>
+    public void regSimpleAction<T>(Action<T> action, int priority) where T : Event
+    {
+        SimpleEventListener<T> al = new SimpleEventListener<T>(action, priority);
+        if (actions.ContainsKey(typeof(T)))
+        {
+            actions[typeof(T)].Add(al);
+        }
+        else
+        {
+            actions.Add(typeof(T), new List<object>());
+            actions[typeof(T)].Add(al);
+        }
+    }
+
+    /// <summary>
+    /// 注销一个简单事件监听器。
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="action"></param>
+    public void unregSimpleAction<T>(Action<T> action) where T : Event
+    {
+        if (actions.ContainsKey(typeof(T)))
+        {
+            foreach (EventListener<T> el in actions[typeof(T)])
+            {
+                if(el is SimpleEventListener<T> && ((SimpleEventListener<T>)el).m_action == action)
+                {
+                    actions[typeof(T)].Remove(el);
+                    return;
+                }
+                
+            }
         }
     }
 
@@ -78,8 +138,7 @@ public class EventCenter : Singleton<EventCenter>
     /// <param name="e"></param>
     public void trigger<T>(T e) where T : Event
     {
-        Debug.Log("Triggering event " + e.GetType());
-        if (!actions.ContainsKey(e.GetType())){
+        if (!actions.ContainsKey(typeof(T))){
             return;
         }
             actions[typeof(T)].Sort(

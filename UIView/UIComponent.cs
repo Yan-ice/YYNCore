@@ -6,7 +6,13 @@ using UnityEngine.UI;
 
 public abstract class UIComponent : Destroyable, IComparable
 {
+    /// <summary>
+    /// 该变量决定加载UI控件资源的目录。
+    /// </summary>
+    public static string RESOURCE_ROOT = "UIComponent";
+
     private AnimQueue ui_queue = new AnimQueue();
+    private LanguageText lang;
 
     protected List<UIComponent> m_childComponents = new List<UIComponent>();
 
@@ -14,7 +20,7 @@ public abstract class UIComponent : Destroyable, IComparable
     protected Transform m_parent;
 
     public UIComponent m_root { get; set; }
-    private string m_prefabName;
+    private Type m_prefabType;
 
     public bool m_isDestroyed { get; private set; }
     public bool m_isShowing { get; private set; } = false;
@@ -23,7 +29,7 @@ public abstract class UIComponent : Destroyable, IComparable
     public UIComponent()
     {
         m_parent = UIManager.Instance.m_root.transform;
-        m_prefabName = GetType().Name;
+        m_prefabType = GetType();
     }
 
     public UIComponent(Transform parent)
@@ -56,28 +62,23 @@ public abstract class UIComponent : Destroyable, IComparable
             return;
         }
         m_currentLayer = id;
-        string path = "UIComponent/";
-        if (this is UIWindow)
-        {
-            path = "UIPrefab/";
-        }
 
-        object obj;
+        GameObject obj;
         if (id == 0)
         {
-            obj = Resources.Load(string.Format("{0}{1}", path, m_prefabName));
+            UIManager.Instance.UILoader().GetAsset(m_prefabType.Name, out obj, out lang);
             if (obj == null)
             {
-                if (GetType().BaseType.Name != m_prefabName)
+                if (m_prefabType.BaseType != null)
                 {
-                    Log.Message(string.Format("未找到UI预制件资源{0}！", m_prefabName));
-                    m_prefabName = GetType().BaseType.Name;
+                    Debug.Log(string.Format("未找到UI预制件资源{0}！", m_prefabType.Name));
+                    m_prefabType = m_prefabType.BaseType;
                     m_currentLayer = -1;
                     LoadLayer(id);
                 }
                 else
                 {
-                    Log.Error(string.Format("未找到UI预制件资源{0}！", m_prefabName));
+                    Debug.LogError(string.Format("未找到UI预制件资源{0}！", m_prefabType.Name));
                 }
 
                 return;
@@ -85,19 +86,19 @@ public abstract class UIComponent : Destroyable, IComparable
         }
         else
         {
-            obj = Resources.Load(string.Format("{0}{1}_{2}", path, m_prefabName, id));
+            UIManager.Instance.UILoader().GetAsset(m_prefabType.Name + "_"+id, out obj, out lang);
             if (obj == null)
             {
-                if (GetType().BaseType.Name != m_prefabName)
+                if (m_prefabType.BaseType != m_prefabType)
                 {
-                    Log.Message(string.Format("未找到UI预制件资源{0}_{1}！", m_prefabName, id));
-                    m_prefabName = GetType().BaseType.Name;
+                    Log.Message(string.Format("未找到UI预制件资源{0}_{1}！", m_prefabType.Name, id));
+                    m_prefabType = m_prefabType.BaseType;
                     m_currentLayer = -1;
                     LoadLayer(id);
                 }
                 else
                 {
-                    Log.Error(string.Format("未找到UI预制件资源{0}_{1}！", m_prefabName, id));
+                    Log.Error(string.Format("未找到UI预制件资源{0}_{1}！", m_prefabType.Name, id));
                 }
 
                 return;
@@ -132,13 +133,20 @@ public abstract class UIComponent : Destroyable, IComparable
                 c.sortingLayerName = "UI";
                 //设置层级
             }
+
+            //前面加载了lang，这里放文本替换控件
+            if (lang != null)
+            {
+                m_gameObjectOuter.AddComponent<TextReplaceControl>().setLanguageText(lang);
+            }
+
             m_isDestroyed = false;
             ComponentInit();
             OnInit(m_gameObjectOuter);
         }
         else
         {
-            Log.Error(string.Format("{0}_{1}资源并不是一个预制件！", this.GetType().Name, id));
+            Log.Error(string.Format("{0}_{1}资源并不是一个预制件, 而是{2}！", this.GetType().Name, id, obj.GetType().Name));
             return;
         }
 
@@ -245,7 +253,6 @@ public abstract class UIComponent : Destroyable, IComparable
         if (m_gameObjectOuter != null)//有一些UI组件压根没有m_gameObject_outer
         {
             m_gameObjectOuter.transform.localScale = Vector3.one;
-            m_gameObjectOuter.SetActive(true);
         }
 
         ui_queue.EnqueueAction(OnShow());
@@ -263,8 +270,11 @@ public abstract class UIComponent : Destroyable, IComparable
         {
             ui_queue.EnqueueSimpleAction(() =>
             {
-                m_gameObjectOuter.transform.localScale = Vector3.zero;
-                m_gameObjectOuter.SetActive(false);
+                if (m_gameObjectOuter != null)
+                {
+                    m_gameObjectOuter.transform.localScale = Vector3.zero;
+                }
+                
             });
         }
 
@@ -279,6 +289,20 @@ public abstract class UIComponent : Destroyable, IComparable
         return !m_isDestroyed && m_isShowing;
     }
 
+    /// <summary>
+    /// 返回该UI当前语言的指定key文本。
+    /// 如果语言key不存在，返回null。
+    /// </summary>
+    /// <param name="key"></param>
+    /// <returns></returns>
+    public string GetLang(string key)
+    {
+        if (lang == null)
+        {
+            return null;
+        }
+        return lang.getValue(key);
+    }
 
     /// <summary>
     /// 提供物件层级。

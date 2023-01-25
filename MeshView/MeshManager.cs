@@ -10,6 +10,8 @@ public class MeshManager : Singleton<MeshManager>
 
     Dictionary<Type, Dictionary<object, MonoBehaviour>> hash = new Dictionary<Type, Dictionary<object, MonoBehaviour>>();
 
+    private ResourcesLoader loader = new ResourcesLoader("MeshManager");
+
     /// <summary>
     /// 获得与脚本关联的Mono。脚本仅与Mono单向关联。
     /// </summary>
@@ -83,7 +85,7 @@ public class MeshManager : Singleton<MeshManager>
     //从资源中加载预制件。
     private GameObject LoadMesh(string mesh)
     {
-        GameObject go = ResourceManager.Instance.LoadPrefab("meshManager", mesh);
+        GameObject go = loader.LoadResource<GameObject>(mesh);
         return GameObject.Instantiate(go);
     }
 }

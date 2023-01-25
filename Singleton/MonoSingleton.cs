@@ -12,6 +12,7 @@ public abstract class MonoSingleton<T> : MonoBehaviour where T : MonoBehaviour
     {
         GameObject g = Instance.gameObject;
     }
+
     public static T Instance
     {
         get
@@ -49,7 +50,11 @@ public abstract class MonoSingleton<T> : MonoBehaviour where T : MonoBehaviour
             }
         }
     }
-    
+    public static bool hasInstance()
+    {
+        return _instance != null;
+    }
+
     protected virtual void onInit()
     {
 

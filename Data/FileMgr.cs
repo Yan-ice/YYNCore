@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using Newtonsoft.Json;
 using SQLite4Unity3d;
 
 using UnityEngine;
@@ -31,9 +32,9 @@ public class FileMgr
     {
         string src = fileName;
         string des = Application.persistentDataPath + "/" + fileName;
-     
+
         //des = Application.persistentDataPath + "/" + fileName;
-        if (!File.Exists(Application.streamingAssetsPath + "/"+ src))
+        if (!File.Exists(Application.streamingAssetsPath + "/" + src))
         {
             return false;
         }
@@ -113,19 +114,19 @@ public class FileMgr
     }
     /// <summary>
     /// 创建文件并获得流。如果创建失败，返回null。
-    /// 如果replace为true，则文件存在会先删除；为false则文件存在时创建失败。
+    /// 如果replace为true，则文件存在会先删除；为false则文件存在时直接打开。
     /// </summary>
     /// <param name="path"></param>
     /// <param name="replace"></param>
     /// <returns></returns>
-    public static FileStream openFile(string path, bool replace)
+    public static FileStream openFile(string path, bool replace = false)
     {
         path = convertToAbsolute(path);
         if (File.Exists(path) && replace)
         {
             File.Delete(path);
         }
-        return File.Open(path,FileMode.OpenOrCreate);
+        return File.Open(path, FileMode.OpenOrCreate);
     }
 
     public static void Delete(string path)
@@ -133,11 +134,11 @@ public class FileMgr
         path = convertToAbsolute(path);
         if (Directory.Exists(path))
         {
-            foreach(string p in Directory.GetDirectories(path))
+            foreach (string p in Directory.GetDirectories(path))
             {
                 Delete(p);
-            } 
-            foreach(string p in Directory.GetFiles(path))
+            }
+            foreach (string p in Directory.GetFiles(path))
             {
                 Delete(p);
             }
@@ -148,7 +149,7 @@ public class FileMgr
             File.Delete(path);
         }
     }
-  
+
     public static bool Exists(string path)
     {
         path = convertToAbsolute(path);
@@ -170,6 +171,20 @@ public class FileMgr
         f.Close();
         return File.ReadAllBytes(path);
     }
-
-
+    public static void saveStringToFile(string path, string data)
+    {
+        saveBinaryToFile(path, Encoding.UTF8.GetBytes(data));
+    }
+    public static string readStringFromFile(string path)
+    {
+        return Encoding.UTF8.GetString(readBinaryFromFile(path));
+    }
+    public static void saveJsonObjToFile<T>(string path, T data)
+    {
+        saveStringToFile(path, JsonConvert.SerializeObject(data));
+    }
+    public static T readJsonObjFromFile<T>(string path)
+    {
+        return (T)JsonConvert.DeserializeObject(readStringFromFile(path));
+    }
 }

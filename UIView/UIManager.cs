@@ -25,8 +25,12 @@ class UIState
 }
 public class UIManager : Singleton<UIManager>
 {
+
     public static Camera m_UICamera;
     public static EventSystem m_eventSystem;
+
+    //UI资源加载源
+    private DynamicResourceLoader dyn_loader;
 
     private GameObject root_model;
     private UIState state;
@@ -38,6 +42,14 @@ public class UIManager : Singleton<UIManager>
 
     public UIManager()
     {
+        ResourceLoaderInterface loader = new BundlePackLoader("AssetBundlePack/uiview");
+        dyn_loader = new DynamicResourceLoader(loader,new Dictionary<string, Type>()
+        {
+            { "window", typeof(GameObject) },
+            { "component", typeof(GameObject) },
+            { "lang", typeof(LanguageText) },
+        });
+
         GameObject UI_root = GameObject.Instantiate(Resources.Load<GameObject>("UICamera"));
         GameObject.DontDestroyOnLoad(UI_root);
 
@@ -46,6 +58,11 @@ public class UIManager : Singleton<UIManager>
         m_eventSystem = UI_root.transform.GetChild(1).GetComponent<EventSystem>();
 
         state = getNewState();
+    }
+
+    public DynamicResourceLoader UILoader()
+    {
+        return dyn_loader;
     }
     
     private UIState getNewState()
@@ -177,7 +194,10 @@ public class UIManager : Singleton<UIManager>
     {
         if (!m_windows.ContainsKey(typeof(T)))
         {
-
+            InitWindow<T>();
+        }else if (m_windows[typeof(T)].m_isDestroyed)
+        {
+            m_windows.Remove(typeof(T));
             InitWindow<T>();
         }
         return (T)m_windows[typeof(T)];
@@ -234,7 +254,7 @@ public class UIManager : Singleton<UIManager>
         }
         else
         {
-            Log.Assertion(string.Format("程序企图销毁一个不存在的窗口{0}。", typeof(T).Name));
+            Debug.Log(string.Format("程序企图销毁一个不存在的窗口{0}。", typeof(T).Name));
         }
     }
 
@@ -246,7 +266,6 @@ public class UIManager : Singleton<UIManager>
         foreach (UIWindow w in m_windows.Values)
         {
             if (!(w is T))
-            //换场景的门是个特例
             {
                 if (!w.m_isDestroyed)
                 {

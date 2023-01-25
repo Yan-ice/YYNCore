@@ -11,11 +11,39 @@ using UnityEngine.SocialPlatforms.Impl;
 /// </summary>
 public class AudioSystem : MonoSingleton<AudioSystem>{
 
-    public static float BGM_volume = 0.7f;
+    private float _Sound_volume = 1f;
+
+    public static float Sound_volume
+    {
+        set
+        {
+            Instance._Sound_volume = value;
+        }
+        get
+        {
+            return Instance._Sound_volume;
+        }
+    }
+
+    private float _BGM_volume = 1f;
+
+    public static float BGM_volume { 
+        set {
+            Instance._BGM_volume = value;
+            Instance.bgm_source.volume = value;
+        }
+        get
+        {
+            return Instance._BGM_volume;
+        }
+    }
+
     List<AudioSource> audioSourceList = new List<AudioSource>();
     AudioSource bgm_source;
-
+    private ResourcesLoader loader;
     protected override void onInit(){
+        loader = new ResourcesLoader("audio");
+
         gameObject.AddComponent<AudioListener>();
 
         bgm_source = gameObject.AddComponent<AudioSource>();
@@ -35,12 +63,13 @@ public class AudioSystem : MonoSingleton<AudioSystem>{
     /// 播放一个声音。
     /// </summary>
     /// <param name="soundName"></param>
-    public AudioSource Play(string soundName) {
-        AudioClip audio_source = ResourceManager.Instance.LoadAudio("sound", soundName);
+    public AudioSource Play(AudioClip audio_source) {
+
         for (int i = 0; i < audioSourceList.Count; i++) {
             AudioSource audioSource = audioSourceList[i];
             if (!audioSource.isPlaying) {
                 audioSource.clip = audio_source;
+                audioSource.volume = _Sound_volume;
                 audioSource.Play();
                 return audioSource;
             }
@@ -49,6 +78,15 @@ public class AudioSystem : MonoSingleton<AudioSystem>{
         return null;
     }
 
+    /// <summary>
+    /// 播放一个声音，将在Resources/Audio/Sound寻找资源文件。
+    /// </summary>
+    /// <param name="soundName"></param>
+    public AudioSource Play(string audio_source)
+    {
+        AudioClip cl = loader.LoadResource<AudioClip>("sound/"+audio_source);
+        return Play(cl);
+    }
 
     /// <summary>
     /// 当前正在播放的所有声音停止。
@@ -63,16 +101,25 @@ public class AudioSystem : MonoSingleton<AudioSystem>{
     /// 播放一个bgm。
     /// </summary>
     /// <param name="bgmName"></param>
-    public void PlayBGM(string bgmName)
+    public void PlayBGM(AudioClip audioSource)
     {
-        AudioClip audioSource = ResourceManager.Instance.LoadAudio("BGM", bgmName);
         if (bgm_source.isPlaying)
         {
             bgm_source.Stop();
         }
-        bgm_source.volume = 1;
+        bgm_source.volume = BGM_volume;
         bgm_source.clip = audioSource;
         bgm_source.Play();
+    }
+
+    /// <summary>
+    /// 播放一个bgm，将在Resources/Audio/Sound寻找资源文件。
+    /// </summary>
+    /// <param name="soundName"></param>
+    public void PlayBGM(string audio_source)
+    {
+        AudioClip cl = loader.LoadResource<AudioClip>("bgm/" + audio_source);
+        PlayBGM(cl);
     }
 
     public IEnumerable<int> AnimStopBGM(int duration)
@@ -85,11 +132,24 @@ public class AudioSystem : MonoSingleton<AudioSystem>{
         bgm_source.Stop();
         
     }
-    public IEnumerable<int> AnimPlayBGM(string new_BGM, int duration)
+    public IEnumerable<int> AnimPlayBGM(AudioClip audioSource, int duration)
     {
-        AudioClip audioSource = ResourceManager.Instance.LoadAudio("BGM", new_BGM);
+
         bgm_source.volume = 0;
         bgm_source.clip = audioSource;
+        bgm_source.Play();
+        for (int a = 0; a < duration; a++)
+        {
+            bgm_source.volume = a / (float)duration * BGM_volume;
+            yield return 0;
+        }
+    }
+
+    public IEnumerable<int> AnimPlayBGM(string audioSource, int duration)
+    {
+
+        bgm_source.volume = 0;
+        bgm_source.clip = loader.LoadResource<AudioClip>("bgm/" + audioSource);
         bgm_source.Play();
         for (int a = 0; a < duration; a++)
         {

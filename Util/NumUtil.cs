@@ -4,6 +4,38 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+
+/// <summary>
+/// 通过该类可以生成一系列随机数表。
+/// 根种子一样的生成器，其生成的一系列随机数表是相同的。
+/// 此外，你可以随时保存与恢复该生成器的状态。可序列化。
+/// </summary>
+[Serializable]
+public class RandomGenerator : JsonSerializable
+{
+    public int seed;
+    
+    /// <summary>
+    /// 根种子一样的生成器，其生成的一系列随机数表是相同的。
+    /// </summary>
+    /// <param name="seed">生成器的根种子</param>
+    public RandomGenerator(int seed)
+    {
+        this.seed = seed;
+    }
+
+    /// <summary>
+    /// 生成一个新的随机数表。
+    /// </summary>
+    /// <returns>随机数表</returns>
+    public Random GenerateNext()
+    {
+        Random rn = new Random(seed);
+        seed = rn.Next(1<<20);
+        return rn;
+    }
+}
+
 public class NumUtil
 {
     //以下是随机数生成部分。
@@ -13,17 +45,27 @@ public class NumUtil
     public static int RandInt(int min, int max)
     {
         if (min == max) { return min; }
+  
         if(current == null)
         {
             current = new Random(DateTime.Now.Millisecond);
         }
-        return current.Next() % (max - min) + min;
+        return current.Next(max-min) + min;
     }
 
     public static int RandInt(int max)
     {
-        return RandInt(0, max);
+        if (max >= 0)
+        {
+            return RandInt(0, max);
+        }
+        else
+        {
+            return -RandInt(0, -max);
+        }
+        
     }
+
     public static float RandFloat(float max)
     {
         if (current == null)
@@ -51,6 +93,19 @@ public class NumUtil
     }
 
     /// <summary>
+    /// 加载随机数状态
+    /// </summary>
+    /// <param name="seed"></param>
+    public static void NewState(Random seed)
+    {
+        if (current != null)
+        {
+            rand_states.Push(current);
+        }
+        current = seed;
+    }
+
+    /// <summary>
     /// 开启一个随机的随机数状态
     /// </summary>
     public static void NewState()
@@ -58,15 +113,17 @@ public class NumUtil
         NewState(DateTime.Now.Millisecond+DateTime.Now.DayOfYear*1000);
     }
     /// <summary>
-    /// （放弃当前随机数状态并)回到上一个随机数状态。
+    /// （返回当前随机数状态并)回到上一个随机数状态。
     /// </summary>
-    public static void RestoreState()
+    public static Random RestoreState()
     {
         if(rand_states.Count == 0)
         {
-            return;
+            return null;
         }
+        Random rt = current;
         current = rand_states.Pop();
+        return rt;
     }
 
     //以下是数据处理部分。

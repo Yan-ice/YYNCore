@@ -4,25 +4,29 @@ using UnityEngine;
 
 using UnityEditor;
 using System.IO;
+using System;
 
 public class AssetBundleCompile
 {
-    static string source_root = "Assets/AssetBundle/";
-    static string target_root = "Assets/AssetBundle/_compile/";
+    static string target_root = "Assets/AssetBundle/_compile";
 
-    public static void compileAB(string packname)
+    public static void compileAB(string root, string packname)
     {
-       
-        copyDir(packname, packname);
-        AssetImporter assetImporter = AssetImporter.GetAtPath(target_root+packname);
-        assetImporter.assetBundleName = packname;
+        Debug.Log("compiling " + packname);
+        copyDir(packname, root+"/"+packname, target_root+"/"+ packname);
+        try
+        {
+            AssetImporter assetImporter = AssetImporter.GetAtPath(target_root + "/" + packname);
+            assetImporter.assetBundleName = packname;
+        }
+        catch (Exception) {
+            Debug.LogAssertion("由于Unity无法立刻加载生成的文件，您需要Unity重载一次asset，然后再打包一次。");
+        }
+        
     }
 
-    static void copyDir(string dir, string packname)
+    static void copyDir(string packname, string r_path, string t_path)
     {
-        string r_path = source_root + dir;
-        string t_path = target_root + dir;
-
         if (!Directory.Exists(t_path))
         {
             Directory.CreateDirectory(t_path);
@@ -31,7 +35,7 @@ public class AssetBundleCompile
         {
             string[] ss = d.Split(new char[] { '/', '\\' });
             string name = ss[ss.Length - 1];
-            copyDir(dir+"/"+name, packname);
+            copyDir(packname, d, t_path+"/"+name);
         }
 
         foreach (string d in Directory.GetFiles(r_path))
@@ -40,7 +44,7 @@ public class AssetBundleCompile
             string name = ss[ss.Length - 1];
             if (name.EndsWith(".cs"))
             {
-                copyFile(dir + "/" + name);
+                copyFile(d, t_path + "/" + name);
             }
             else if(!name.EndsWith(".meta"))
             {
@@ -51,10 +55,8 @@ public class AssetBundleCompile
         }
     }
 
-    static void copyFile(string file)
+    static void copyFile(string r_path, string t_path)
     {
-        string r_path = source_root + file;
-        string t_path = target_root + file;
         if (t_path.EndsWith(".meta"))
         {
             return;
@@ -70,48 +72,77 @@ public class AssetBundleCompile
         }
         File.Copy(r_path, t_path);
     }
-
 }
+
 public class CreateAssetBundles
 {
-    [MenuItem("Assets/Build Default Pack")]
-    static void BuildDefault()
+    public static string resource_root_name = "BundleData";
+
+    /// <summary>
+    /// 获得Assets内的所有资源根目录。
+    /// </summary>
+    /// <param name="root">Assets</param>
+    /// <param name="result">(out)用于存放目录路径列表</param>
+    public static void findResourceRoot(string root, List<string> result)
     {
-        string assetBundleDirectory = "AssetBundlePack";
-        if (Directory.Exists(assetBundleDirectory))
+        foreach(string pth in Directory.GetDirectories(root))
         {
-            Directory.Delete(assetBundleDirectory, true);
+            if (pth.EndsWith(resource_root_name))
+            {
+                result.Add(pth);
+                continue;
+            }
+            findResourceRoot(pth,result);
         }
-        Directory.CreateDirectory(assetBundleDirectory);
-
-        AssetBundleCompile.compileAB("defaultpack");
-
-        BuildPipeline.BuildAssetBundles(assetBundleDirectory,
-                                        BuildAssetBundleOptions.ChunkBasedCompression,
-                                        BuildTarget.StandaloneWindows);
     }
 
-    [MenuItem("Assets/Build Combat Pack")]
-    static void BuildCombat()
+    /// <summary>
+    /// 标记所有资源包名，并返回资源包名列表。
+    /// </summary>
+    /// <param name="pack_namelist"></param>
+    public static void MarkResources(List<string> pack_namelist)
     {
-        AssetBundleCompile.compileAB("combatpack");
-        AssetBundleCompile.compileAB("op_pack");
+        List<string> roots = new List<string>();
+        findResourceRoot("Assets",roots);
 
-        build();
+        foreach(string root in roots)
+        {
+            foreach(string pack in Directory.GetDirectories(root))
+            {
+                string pack_name = pack.Replace(root, "").Substring(1);
+                AssetBundleCompile.compileAB(root, pack_name);
+
+                AssetImporter assetImporter = AssetImporter.GetAtPath(pack);
+                assetImporter.assetBundleName = pack_name;
+                if (!pack_namelist.Contains(pack_name))
+                {
+                    pack_namelist.Add(pack_name);
+                }
+            }
+        }
     }
 
-    private static void build()
+    [MenuItem("Assets/Build Bundle Pack")]
+    static void BuildPack()
     {
-        string assetBundleDirectory = "AssetBundlePack";
-        if (Directory.Exists(assetBundleDirectory))
-        {
-            Directory.Delete(assetBundleDirectory, true);
-        }
-        Directory.CreateDirectory(assetBundleDirectory);
+        List<string> packs = new List<string>();
+        MarkResources(packs);
 
-        BuildPipeline.BuildAssetBundles(assetBundleDirectory,
-                                        BuildAssetBundleOptions.ChunkBasedCompression,
-                                        BuildTarget.StandaloneWindows);
+        string bundleOutDirectory = "AssetBundlePack";
+        if (Directory.Exists(bundleOutDirectory))
+        {
+            Directory.Delete(bundleOutDirectory, true);
+        }
+        Directory.CreateDirectory(bundleOutDirectory);
+
+        foreach (string pack in packs)
+        {
+            
+            BuildPipeline.BuildAssetBundles(bundleOutDirectory,
+                                            BuildAssetBundleOptions.ChunkBasedCompression,
+                                            BuildTarget.StandaloneWindows);
+        }
+
     }
 
 }

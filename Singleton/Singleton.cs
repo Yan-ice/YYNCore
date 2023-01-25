@@ -27,12 +27,18 @@ public abstract class Singleton<T> where T : Singleton<T>,new()
         }
     }
 
+    public static bool hasInstance()
+    {
+        return _instance != null;
+    }
+
     /// <summary>
     /// 手动构造这个对象。
     /// </summary>
     /// <returns>如果已经构造过，则返回false。</returns>
     public static bool Init()
     {
+
         if (null == _instance)
         {
             _instance = new T();

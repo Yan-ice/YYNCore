@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Unity.Loading;
 using UnityEngine;
 
 
@@ -31,6 +32,7 @@ class DynResource
         if (asset == null)
         {
             asset_name = "__ignored__";
+            Debug.Log("Unloadable resource found. path:"+asset_path+" type:"+t.Name);
             return null;
         }
         if (asset.GetType() == t)
@@ -39,7 +41,7 @@ class DynResource
         }
         else
         {
-            Debug.LogError("无法将一个资源加载为两种类型！原加载类型:" + asset.GetType().Name + " 新加载类型:" + t.Name);
+            Debug.LogError("无法将一个资源加载为两种类型！原加载类型:" + asset.GetType().ToString() + " 新加载类型:" + t.ToString());
             return null;
         }
     }
@@ -58,6 +60,7 @@ public class DynamicResourceLoader
     /// <summary>
     /// 将一个基本资源加载器封装为动态加载器。
     /// 在动态加载器中，文件的路径仅被用于区分文件类型，而可以根据文件名一次性检索到多种资源。
+    /// 目前资源类型可以是Sprite(png等),Text(文本文件),任何Serializable类型(json文件）。
     /// 
     /// 注：动态加载器依赖于基本加载器的Manifest函数。
     /// </summary>
@@ -70,7 +73,7 @@ public class DynamicResourceLoader
             Debug.LogAssertion("ResourcesLoader缺少Manifest，无法进行动态加载！");
         }
 
-        pack_name = loader.PackName();
+        pack_name = loader.ResourcePackName();
         foreach (string s in loader.Manifest())
         {
             manifest.Add(new DynResource(loader, s));
@@ -84,15 +87,25 @@ public class DynamicResourceLoader
             }
         }
     }
-    public List<string> Manifest()
+    public HashSet<string> PathManifest()
     {
-        List<string> s = new List<string>();
+        HashSet<string> s = new HashSet<string>();
         foreach(DynResource r in manifest)
         {
             s.Add(r.asset_path);
         }
         return s;
     }
+    public HashSet<string> NameManifest()
+    {
+        HashSet<string> s = new HashSet<string>();
+        foreach (DynResource r in manifest)
+        {
+            s.Add(r.asset_name);
+        }
+        return s;
+    }
+
     public string PackName()
     {
         return pack_name;
@@ -105,6 +118,7 @@ public class DynamicResourceLoader
     /// <param name="path">指定路径</param>
     public List<T> LoadByResourcePath<T>(string path)
     {
+       
         List<T> ls = new List<T>();
         foreach (object o in LoadByResourcePath(path, typeof(T)))
         {
@@ -121,14 +135,22 @@ public class DynamicResourceLoader
     /// <param name="path">指定路径</param>
     public List<object> LoadByResourcePath(string path, Type t)
     {
+
         List<object> assets = new List<object>();
+
         foreach (DynResource asset in manifest)
         {
+            
             if (asset.asset_path.ToLower().StartsWith(path.ToLower()))
             {
-                assets.Add(asset.LoadAsset(t));
+                object o = asset.LoadAsset(t);
+                if (o!=null && t.IsAssignableFrom(o.GetType()))
+                {
+                    assets.Add(o);
+                }
             }
         }
+        //Debug.Log("Loader: " + pack_name + " path: " + path + " type: " + t.ToString());
         return assets;
     }
 
@@ -148,6 +170,8 @@ public class DynamicResourceLoader
             {
                 if(asset.GetAsset()!=null)
                     assets.Add(asset.GetAsset());
+                else
+                    Debug.Log("Asset is null.");
             }
         }
         return assets;
@@ -256,9 +280,9 @@ public class DynamicResourceLoader
 /// 使用该类管理包时，应注意: 该工具暂不支持类别分包,仅支持场景分包！
 /// 即：如果将三类资源分在三个包内,用该类管理会寄！
 /// </summary>
-public class DynamicLoaderGroup
+public class DynamicResourceLoaderGroup
 {
-    static Dictionary<string, Type> load_rule;
+    Dictionary<string, Type> load_rule;
 
     List<DynamicResourceLoader> bdlist = new List<DynamicResourceLoader>();
 
@@ -267,9 +291,9 @@ public class DynamicLoaderGroup
     /// 字典的Key是目录路径，字典的Value表示该路径下资源的类型。
     /// </summary>
     /// <param name="load_rule"></param>
-    public DynamicLoaderGroup(Dictionary<string,Type> load_rule)
+    public DynamicResourceLoaderGroup(Dictionary<string,Type> load_rule)
     {
-        DynamicLoaderGroup.load_rule = load_rule;
+        this.load_rule = load_rule;
         foreach(DynamicResourceLoader bd in bdlist)
         {
             foreach(string rule in load_rule.Keys)
@@ -288,10 +312,31 @@ public class DynamicLoaderGroup
     {
         DynamicResourceLoader dyn_loader = new DynamicResourceLoader(loader, load_rule);
         bdlist.Add(dyn_loader);
+
         foreach (string rule in load_rule.Keys)
         {
             dyn_loader.LoadByResourcePath(rule, load_rule[rule]);
         }
+    }
+
+
+    /// <summary>
+    /// 加载指定路径下的所有资源为某一类型。
+    /// </summary>
+    /// <typeparam name="T">类型</typeparam>
+    /// <param name="path">指定路径</param>
+    public List<T> LoadByResourcePath<T>(string path)
+    {
+        List<T> ls = new List<T>();
+        foreach (DynamicResourceLoader loader in bdlist)
+        {
+            foreach (T o in loader.LoadByResourcePath<T>(path))
+            {
+                ls.Add(o);
+            }
+        }
+        
+        return ls;
     }
 
     /// <summary>

@@ -40,17 +40,18 @@ public class ZipLoader : ResourceLoaderInterface
    
     public Sprite GetSprite(byte[] bytes)
     {
-        MemoryStream ms = new MemoryStream(bytes);
-        Image image = System.Drawing.Image.FromStream(ms);
+        //MemoryStream ms = new MemoryStream(bytes);
+        //Image image = System.Drawing.Image.FromStream(ms);
 
         //先创建一个Texture2D对象，用于把流数据转成Texture2D
-        Texture2D texture = new Texture2D(image.Width, image.Height);
-        texture.LoadImage(bytes);//流数据转换成Texture2D
+        //Texture2D texture = new Texture2D(image.Width, image.Height);
+        //texture.LoadImage(bytes);//流数据转换成Texture2D
 
         //创建一个Sprite,以Texture2D对象为基础
-        Sprite sp = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), Vector2.zero);
+        //Sprite sp = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), Vector2.zero);
 
-        return sp;
+        //return sp;
+        return null;
     }
 
     //这里需要手动实现每一种文件的反序列化。还挺烦的。
@@ -83,7 +84,7 @@ public class ZipLoader : ResourceLoaderInterface
         return resources.Keys;
     }
 
-    public string PackName()
+    public string ResourcePackName()
     {
         return pack_name;
     }

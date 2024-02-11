@@ -53,6 +53,7 @@ public class UIManager : Singleton<UIManager>
         GameObject UI_root = GameObject.Instantiate(Resources.Load<GameObject>("UICamera"));
         GameObject.DontDestroyOnLoad(UI_root);
 
+        
         m_UICamera = UI_root.GetComponent<Camera>();
         root_model = UI_root.transform.GetChild(0).gameObject;
         m_eventSystem = UI_root.transform.GetChild(1).GetComponent<EventSystem>();

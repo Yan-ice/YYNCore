@@ -17,7 +17,7 @@ public interface ResourceLoaderInterface
     /// 返回该加载器(包)的名字。
     /// </summary>
     /// <returns></returns>
-    public string PackName();
+    public string ResourcePackName();
 
     /// <summary>
     /// 在指定路径读取特定类型资源。

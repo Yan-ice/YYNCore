@@ -99,7 +99,7 @@ public class RawJsonFileLoader : ResourceLoaderInterface
         return manifest;
     }
 
-    public string PackName()
+    public string ResourcePackName()
     {
         return pack_name;
     }

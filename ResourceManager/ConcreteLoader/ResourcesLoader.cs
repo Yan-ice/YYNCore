@@ -53,7 +53,7 @@ public class ResourcesLoader : ResourceLoaderInterface
         return new string[0];
     }
 
-    public string PackName()
+    public string ResourcePackName()
     {
         return catalog_name;
     }

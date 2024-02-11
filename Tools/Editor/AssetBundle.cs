@@ -13,16 +13,17 @@ public class AssetBundleCompile
     public static void compileAB(string root, string packname)
     {
         Debug.Log("compiling " + packname);
-        copyDir(packname, root+"/"+packname, target_root+"/"+ packname);
+        copyDir(packname, root + "/" + packname, target_root + "/" + packname);
         try
         {
             AssetImporter assetImporter = AssetImporter.GetAtPath(target_root + "/" + packname);
             assetImporter.assetBundleName = packname;
         }
-        catch (Exception) {
-            Debug.LogAssertion("由于Unity无法立刻加载生成的文件，您需要Unity重载一次asset，然后再打包一次。");
+        catch (Exception)
+        {
+            
         }
-        
+
     }
 
     static void copyDir(string packname, string r_path, string t_path)
@@ -35,7 +36,7 @@ public class AssetBundleCompile
         {
             string[] ss = d.Split(new char[] { '/', '\\' });
             string name = ss[ss.Length - 1];
-            copyDir(packname, d, t_path+"/"+name);
+            copyDir(packname, d, t_path + "/" + name);
         }
 
         foreach (string d in Directory.GetFiles(r_path))
@@ -46,12 +47,12 @@ public class AssetBundleCompile
             {
                 copyFile(d, t_path + "/" + name);
             }
-            else if(!name.EndsWith(".meta"))
+            else if (!name.EndsWith(".meta"))
             {
-                AssetImporter assetImporter = AssetImporter.GetAtPath(r_path+"/"+name);
+                AssetImporter assetImporter = AssetImporter.GetAtPath(r_path + "/" + name);
                 assetImporter.assetBundleName = packname;
             }
-            
+
         }
     }
 
@@ -78,36 +79,29 @@ public class CreateAssetBundles
 {
     public static string resource_root_name = "BundleData";
 
-    /// <summary>
-    /// 获得Assets内的所有资源根目录。
-    /// </summary>
-    /// <param name="root">Assets</param>
-    /// <param name="result">(out)用于存放目录路径列表</param>
+
     public static void findResourceRoot(string root, List<string> result)
     {
-        foreach(string pth in Directory.GetDirectories(root))
+        foreach (string pth in Directory.GetDirectories(root))
         {
             if (pth.EndsWith(resource_root_name))
             {
                 result.Add(pth);
                 continue;
             }
-            findResourceRoot(pth,result);
+            findResourceRoot(pth, result);
         }
     }
 
-    /// <summary>
-    /// 标记所有资源包名，并返回资源包名列表。
-    /// </summary>
-    /// <param name="pack_namelist"></param>
+
     public static void MarkResources(List<string> pack_namelist)
     {
         List<string> roots = new List<string>();
-        findResourceRoot("Assets",roots);
+        findResourceRoot("Assets", roots);
 
-        foreach(string root in roots)
+        foreach (string root in roots)
         {
-            foreach(string pack in Directory.GetDirectories(root))
+            foreach (string pack in Directory.GetDirectories(root))
             {
                 string pack_name = pack.Replace(root, "").Substring(1);
                 AssetBundleCompile.compileAB(root, pack_name);
@@ -135,14 +129,9 @@ public class CreateAssetBundles
         }
         Directory.CreateDirectory(bundleOutDirectory);
 
-        foreach (string pack in packs)
-        {
-            
-            BuildPipeline.BuildAssetBundles(bundleOutDirectory,
+        BuildPipeline.BuildAssetBundles(bundleOutDirectory,
                                             BuildAssetBundleOptions.ChunkBasedCompression,
                                             BuildTarget.StandaloneWindows);
-        }
-
     }
 
 }
